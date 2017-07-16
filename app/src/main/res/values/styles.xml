@@ -1,0 +1,18 @@
+<resources>
+    <style name="AppTheme" parent="@android:style/Theme.DeviceDefault.Light">
+        <item name="android:actionBarStyle">@style/mActionBarStyle</item>
+        <item name="android:colorPrimary">@color/my_primary</item>
+        <item name="android:colorPrimaryDark">@color/my_primary_dark</item>
+    </style>
+
+    <style name="mActionBarStyle" parent="@android:style/Widget.DeviceDefault.Light.ActionBar">
+        <item name="android:background">@color/action_bar_color</item>
+        <item name="android:titleTextStyle">@style/mActionBarTitleTextStyle</item>
+        <item name="android:textColorSecondary">@color/action_bar_text_color</item>
+    </style>
+
+    <style name="mActionBarTitleTextStyle" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@color/action_bar_text_color</item>
+    </style>
+
+</resources>

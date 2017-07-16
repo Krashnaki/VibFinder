@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Vib-bulucu</string>
+    <string name="bluetooth_disabled">Bluetooth kapalı.</string>
+    <string name="enable_button">AÇ</string>
+    <string name="enabling_bluetooth">Bluetooth adaptörü etkin...</string>
+    <string name="menu_exit">çıkış</string>
+    <string name="startSearch">aramayı başlat</string>
+    <string name="stopSearch">aramayı durdur</string>
+    <string name="stopVibration">alarma kapat</string>
+    <string name="title_activity_vib_finder">Vib-bulucu</string>
+</resources>

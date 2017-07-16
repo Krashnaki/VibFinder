@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">Vib-Finder</string>
+
+    <string name="title_activity_vib_finder">Vib-Finder</string>
+    <string name="stopVibration">Stop Vibration</string>
+    <string name="startSearch">Start Search</string>
+    <string name="stopSearch">Stop Search</string>
+    <string name="bluetooth_disabled">Bluetooth adapter is disabled.</string>
+    <string name="enabling_bluetooth">Enabling bluetooth adapter...</string>
+    <string name="enable_button">ENABLE</string>
+    <string name="press_back_again_to_exit">Press back again to STOP the search and exit.</string>
+    <string name="device_name">Device \nname</string>
+    <string name="last_seen">Last \n seen</string>
+    <string name="alert_enabled">Alert \n on</string>
+
+    <string name="preferences_vib_finder_service" translatable="false">com.pr0gramm.donation.vib-finder.preferences_vib_finder_service</string>
+    <string name="preference_search_enabled" translatable="false">com.pr0gramm.donation.vib-finder.preference_search_running</string>
+
+    <string name="start_mode_autostart" translatable="false">autostart</string>
+    <string name="start_mode_user" translatable="false">user</string>
+
+    <!-- Menu items -->
+    <string name="menu_exit">Exit</string>
+</resources>
