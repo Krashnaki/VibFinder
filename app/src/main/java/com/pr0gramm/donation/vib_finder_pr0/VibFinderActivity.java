@@ -22,12 +22,12 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class VibFinderActivity extends Activity {
     private final static String TAG = VibFinderActivity.class.getSimpleName();
@@ -36,19 +36,19 @@ public class VibFinderActivity extends Activity {
 
     boolean doubleBackToExitPressedOnce = false;
 
-    private Button mStartStopButton;
-    private Button mStopVibrationButton;
-    private ListView mVibratorsList;
+    private Button searchButton;
+    private Button stopVibrationButton;
+    private ListView vibList;
 
-    private ConstraintLayout mBLEStatusView;
-    private TextView mBLEStatusTextView;
-    private Button mBLEEnableButton;
+    private ConstraintLayout enableBLEView;
+    private TextView BLEstatusTextView;
+    private Button enableBLEButton;
 
-    private VibratorListAdapter mVibratorListAdapter;
+    private VibratorListAdapter vibListViewAdapter;
 
-    private VibDBHelper mVibDB;
+    private VibDBHelper vibDBHelper;
 
-    private VibFinderService mVibFinderService;
+    private VibFinderService vibFinderService;
 
 
     // Code to manage Service lifecycle.
@@ -57,25 +57,27 @@ public class VibFinderActivity extends Activity {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             Log.d(TAG, "service connected to VibControlActivity");
-            mVibFinderService = ((VibFinderService.LocalVibFinderServiceBinder) service).getService();
-            if (!mVibFinderService.getBluetoothEnabled()) {
+            vibFinderService = ((VibFinderService.LocalVibFinderServiceBinder) service).getService();
+            if (!vibFinderService.getBluetoothEnabled()) {
                 showBluetoothDisabledView();
             }
-            if (mVibFinderService.getAlertActive()) {
-                mStopVibrationButton.setVisibility(View.VISIBLE);
+
+            if (vibFinderService.getAlertActive()) {
+                stopVibrationButton.setVisibility(View.VISIBLE);
             } else {
-                mStopVibrationButton.setVisibility(View.GONE);
+                stopVibrationButton.setVisibility(View.GONE);
             }
-            if (mVibFinderService.getSearchStarted()) {
-                mStartStopButton.setText(getString(R.string.stopSearch));
+
+            if (vibFinderService.getSearchStarted()) {
+                searchButton.setText(getString(R.string.stopSearch));
             } else {
-                mStartStopButton.setText(getString(R.string.startSearch));
+                searchButton.setText(getString(R.string.startSearch));
             }
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-            mVibFinderService = null;
+            vibFinderService = null;
         }
     };
 
@@ -83,40 +85,57 @@ public class VibFinderActivity extends Activity {
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-            if (VibFinderService.ACTION_BLUETOOTH_DISABLED.equals(action)) {
-                //request enable bluetooth again, disable UI
-                showBluetoothDisabledView();
-            } else if (VibFinderService.ACTION_BLUETOOTH_ENABLED.equals(action)) {
-                mBLEStatusView.setVisibility(View.GONE);
-            } else if (VibFinderService.ACTION_BLUETOOTH_NOT_USABLE.equals(action)) {
-                Log.e(TAG, "Unable to initialize Bluetooth");
-                exitApplication();
-                finish();
-            } else if (VibFinderService.ACTION_FOUND_VIBRATOR.equals(action)) {
-                mStopVibrationButton.setVisibility(View.VISIBLE);
 
-                mVibratorListAdapter.clear();
-                VibratorMatch[] foundVibrators = mVibDB.getAllValidatedMatches();
-                for (VibratorMatch vib : foundVibrators) {
-                    mVibratorListAdapter.addVibrator(vib);
-                }
-                mVibratorListAdapter.notifyDataSetChanged();
-            } else if (VibFinderService.ACTION_ALERT_STOPPED.equals(action)) {
-                mStopVibrationButton.setVisibility(View.GONE);
-            } else if (VibFinderService.ACTION_VIBRATOR_DATA_CHANGED.equals(action)) {
-                //reread the list of vibrators that have been found
-                mVibratorListAdapter.clear();
-                VibratorMatch[] foundVibrators = mVibDB.getAllValidatedMatches();
-                for (VibratorMatch vib : foundVibrators) {
-                    mVibratorListAdapter.addVibrator(vib);
-                }
-                mVibratorListAdapter.notifyDataSetChanged();
+            final String action = intent.getAction();
+
+            switch (action) {
+                case VibFinderService.ACTION_BLUETOOTH_DISABLED:
+                    showBluetoothDisabledView();
+                    break;
+
+
+                case VibFinderService.ACTION_BLUETOOTH_ENABLED:
+                    enableBLEView.setVisibility(View.GONE);
+                    break;
+
+
+                case VibFinderService.ACTION_BLUETOOTH_NOT_USABLE:
+
+                    //TODO Show user error message
+
+                    Log.e(TAG, "Unable to initialize Bluetooth");
+                    exitApplication();
+                    finish();
+                    break;
+
+
+                case VibFinderService.ACTION_FOUND_VIBRATOR:
+                    stopVibrationButton.setVisibility(View.VISIBLE);
+
+                    vibListViewAdapter.clear();
+                    for (VibratorMatch vib : vibDBHelper.getAllValidatedMatches()) {
+                        vibListViewAdapter.addVibrator(vib);
+                    }
+                    vibListViewAdapter.notifyDataSetChanged();
+                    break;
+
+
+                case VibFinderService.ACTION_ALERT_STOPPED:
+                    stopVibrationButton.setVisibility(View.GONE);
+                    break;
+
+                case VibFinderService.ACTION_VIBRATOR_DATA_CHANGED:
+                    vibListViewAdapter.clear();
+                    for (VibratorMatch vib : vibDBHelper.getAllValidatedMatches()) {
+                        vibListViewAdapter.addVibrator(vib);
+                    }
+                    vibListViewAdapter.notifyDataSetChanged();
+                    break;
             }
         }
     };
 
-    private static IntentFilter makeGattUpdateIntentFilter() {
+    private static IntentFilter createGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(VibFinderService.ACTION_BLUETOOTH_DISABLED);
         intentFilter.addAction(VibFinderService.ACTION_BLUETOOTH_NOT_USABLE);
@@ -143,61 +162,60 @@ public class VibFinderActivity extends Activity {
         setContentView(R.layout.activity_vib_finder);
 
 
-        mStartStopButton = findViewById(R.id.startStopButton);
-        mStopVibrationButton = findViewById(R.id.stopVibrationButton);
-        mVibratorsList = findViewById(R.id.vibrators_list);
-        mBLEStatusTextView = findViewById(R.id.ble_status_text_view);
-        mBLEEnableButton = findViewById(R.id.ble_enable_button);
-        mBLEStatusView = findViewById(R.id.layout_enable_bluetooth);
+        searchButton = findViewById(R.id.startStopButton);
+        stopVibrationButton = findViewById(R.id.stopVibrationButton);
+        vibList = findViewById(R.id.vibrators_list);
+        BLEstatusTextView = findViewById(R.id.ble_status_text_view);
+        enableBLEButton = findViewById(R.id.ble_enable_button);
+        enableBLEView = findViewById(R.id.layout_enable_bluetooth);
 
-        mVibratorListAdapter = new VibratorListAdapter();
-        mVibratorsList.addHeaderView(getLayoutInflater().inflate(R.layout.listheader_vibrator, mVibratorsList, false));
-        mVibratorsList.setAdapter(mVibratorListAdapter);
+        vibListViewAdapter = new VibratorListAdapter();
+        vibList.addHeaderView(getLayoutInflater().inflate(R.layout.listheader_vibrator, vibList, false));
+        vibList.setAdapter(vibListViewAdapter);
 
-        mStartStopButton.setOnClickListener(new View.OnClickListener() {
+        searchButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                if (mVibFinderService != null) {
-                    //toggle search status
-                    if (mVibFinderService.getSearchStarted()) {
-                        mVibFinderService.stopSearch();
-                        mStartStopButton.setText(getString(R.string.startSearch));
+                if (vibFinderService != null) {
+                    if (vibFinderService.getSearchStarted()) {
+                        vibFinderService.stopSearch();
+                        searchButton.setText(getString(R.string.startSearch));
                     } else {
-                        mVibFinderService.startSearch();
-                        mStartStopButton.setText(getString(R.string.stopSearch));
+                        vibFinderService.startSearch();
+                        searchButton.setText(getString(R.string.stopSearch));
                     }
                 }
             }
         });
 
-        mStopVibrationButton.setOnClickListener(new View.OnClickListener() {
+        stopVibrationButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                if (mVibFinderService != null) {
-                    mVibFinderService.stopAlert();
+                if (vibFinderService != null) {
+                    vibFinderService.stopAlert();
                 }
             }
         });
 
-        mBLEEnableButton.setOnClickListener(new View.OnClickListener() {
+        enableBLEButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mVibFinderService != null) {
-                    if (!mVibFinderService.enableBluetooth()) {
+                if (vibFinderService != null) {
+                    if (!vibFinderService.enableBluetooth()) {
                         return;
                     }
-                    mBLEEnableButton.setVisibility(View.INVISIBLE);
-                    mBLEStatusView.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.ble_enabling_color));
-                    mBLEStatusTextView.setText(getString(R.string.enabling_bluetooth));
+                    enableBLEButton.setVisibility(View.INVISIBLE);
+                    enableBLEView.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.ble_enabling_color));
+                    BLEstatusTextView.setText(getString(R.string.enabling_bluetooth));
                 }
             }
         });
 
-        mVibDB = new VibDBHelper(this);
+        vibDBHelper = new VibDBHelper(this);
 
         Intent vibFinderService = new Intent(this, VibFinderService.class);
         startService(vibFinderService);
         bindService(vibFinderService, mServiceConnection, BIND_AUTO_CREATE);
 
-        getActionBar().setTitle(getString(R.string.title_activity_vib_finder));
+        Objects.requireNonNull(getActionBar()).setTitle(getString(R.string.title_activity_vib_finder));
         getActionBar().setDisplayHomeAsUpEnabled(false);
 
     }
@@ -208,33 +226,35 @@ public class VibFinderActivity extends Activity {
 
         Log.d(TAG, "resume");
 
-        if (mVibFinderService != null && !mVibFinderService.getBluetoothEnabled()) {
+        if (vibFinderService != null && !vibFinderService.getBluetoothEnabled()) {
             showBluetoothDisabledView();
         } else {
-            mBLEStatusView.setVisibility(View.GONE);
+            enableBLEView.setVisibility(View.GONE);
         }
+
         //Enable bluetooth if disabled and stop vibration.
-        if (mVibFinderService != null) {
-            if (mVibFinderService.getAlertActive()) {
-                mStopVibrationButton.setVisibility(View.VISIBLE);
+        if (vibFinderService != null) {
+            if (vibFinderService.getAlertActive()) {
+                stopVibrationButton.setVisibility(View.VISIBLE);
             } else {
-                mStopVibrationButton.setVisibility(View.GONE);
+                stopVibrationButton.setVisibility(View.GONE);
             }
-            if (mVibFinderService.getSearchStarted()) {
-                mStartStopButton.setText(getString(R.string.stopSearch));
+
+            if (vibFinderService.getSearchStarted()) {
+                searchButton.setText(getString(R.string.stopSearch));
             } else {
-                mStartStopButton.setText(getString(R.string.startSearch));
+                searchButton.setText(getString(R.string.startSearch));
             }
         }
 
-        mVibratorListAdapter.clear();
-        VibratorMatch[] foundVibrators = mVibDB.getAllValidatedMatches();
+        vibListViewAdapter.clear();
+        VibratorMatch[] foundVibrators = vibDBHelper.getAllValidatedMatches();
         for (VibratorMatch vib : foundVibrators) {
-            mVibratorListAdapter.addVibrator(vib);
+            vibListViewAdapter.addVibrator(vib);
         }
-        mVibratorListAdapter.notifyDataSetChanged();
+        vibListViewAdapter.notifyDataSetChanged();
 
-        registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+        registerReceiver(mGattUpdateReceiver, createGattUpdateIntentFilter());
     }
 
     @Override
@@ -250,17 +270,17 @@ public class VibFinderActivity extends Activity {
         Log.d(TAG, "destroy");
         invalidateOptionsMenu();
         clearUI();
-        if (mVibFinderService != null) {
+        if (vibFinderService != null) {
             unbindService(mServiceConnection);
         }
-        mVibFinderService = null;
+        vibFinderService = null;
     }
 
     private void exitApplication() {
-        if (mVibFinderService != null) {
+        if (vibFinderService != null) {
             unbindService(mServiceConnection);
         }
-        mVibFinderService = null;
+        vibFinderService = null;
         Intent vibFinderService = new Intent(this, VibFinderService.class);
         stopService(vibFinderService);
         finish();
@@ -303,7 +323,7 @@ public class VibFinderActivity extends Activity {
 //     * Creates a dialog demanding activation of bluetooth.
 //     */
 //    private void demandBluetoothActivation(){
-//        Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+//       Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 //        startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
 //    }
 
@@ -331,10 +351,10 @@ public class VibFinderActivity extends Activity {
      * and giving him the chance to enable it visible.
      */
     private void showBluetoothDisabledView() {
-        mBLEEnableButton.setVisibility(View.VISIBLE);
-        mBLEStatusView.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.ble_disabled_color));
-        mBLEStatusTextView.setText(getString(R.string.bluetooth_disabled));
-        mBLEStatusView.setVisibility(View.VISIBLE);
+        enableBLEButton.setVisibility(View.VISIBLE);
+        enableBLEView.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.ble_disabled_color));
+        BLEstatusTextView.setText(getString(R.string.bluetooth_disabled));
+        enableBLEView.setVisibility(View.VISIBLE);
     }
 
     /**
@@ -342,14 +362,14 @@ public class VibFinderActivity extends Activity {
      * Will update the list and the database
      */
     public void vibratorAlertEnabledClickHandler(View v) {
-        int position = mVibratorsList.getPositionForView(v);
+        int position = vibList.getPositionForView(v);
         //careful, the value that should be set is ignored is the opposite of the alertEnabled value!
         //additionally this value should be toggeled -> we need to set !!alertEnabled as the new
         //vibrator ignored value
-        mVibDB.setVibratorIgnored(mVibratorListAdapter.getVibrator(position),
-                mVibratorListAdapter.getVibrator(position).getAlertEnabled());
-        mVibratorListAdapter.getVibrator(position).toggleAlertEnabled();
-        mVibratorListAdapter.notifyDataSetChanged();
+        vibDBHelper.setVibratorIgnored(vibListViewAdapter.getVibrator(position),
+                vibListViewAdapter.getVibrator(position).getAlertEnabled());
+        vibListViewAdapter.getVibrator(position).toggleAlertEnabled();
+        vibListViewAdapter.notifyDataSetChanged();
     }
 
     /**
@@ -370,7 +390,7 @@ public class VibFinderActivity extends Activity {
 
         public VibratorListAdapter() {
             super();
-            mVibrators = new ArrayList<VibratorMatch>();
+            mVibrators = new ArrayList<>();
             mInflator = VibFinderActivity.this.getLayoutInflater();
         }
 
@@ -421,8 +441,8 @@ public class VibFinderActivity extends Activity {
             VibratorMatch vibrator = mVibrators.get(i);
             String name = vibrator.getName();
             String time = vibrator.getLastSeenTime();
-            boolean alertEnabled = vibrator.getAlertEnabled();
-            viewHolder.alertEnabled.setChecked(alertEnabled);
+            
+            viewHolder.alertEnabled.setChecked(vibrator.getAlertEnabled());
             viewHolder.deviceName.setText(name);
             viewHolder.lastFoundTime.setText(time);
 

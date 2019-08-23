@@ -6,7 +6,7 @@
     <string name="enabling_bluetooth">Bluetooth adaptörü etkin...</string>
     <string name="menu_exit">çıkış</string>
     <string name="startSearch">aramayı başlat</string>
-    <string name="stopSearch">aramayı durdur</string>
     <string name="stopVibration">alarma kapat</string>
-    <string name="title_activity_vib_finder">Vib-bulucu</string>
+    <string name="title_activity_vib_finder">VibFinder</string>
+    <string name="stopSearch">aramayı durdur</string>
 </resources>

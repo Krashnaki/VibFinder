@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Vib-Finder</string>
 
-    <string name="title_activity_vib_finder">Vib-Finder</string>
+    <string name="title_activity_vib_finder">VibFinder</string>
     <string name="stopVibration">Stop Vibration</string>
     <string name="startSearch">Start Search</string>
     <string name="stopSearch">Stop Search</string>

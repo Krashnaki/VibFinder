@@ -8,7 +8,7 @@
     <string name="startSearch">Suche beginnen</string>
     <string name="stopSearch">Suche beenden</string>
     <string name="stopVibration">Alarm ausschalten</string>
-    <string name="title_activity_vib_finder">Vib-Finder</string>
+    <string name="title_activity_vib_finder">VibFinder</string>
     <string name="press_back_again_to_exit">Nochmal drücken um die Suche zu BEENDEN und die App zu verlassen.</string>
     <string name="alert_enabled">Alarm</string>
     <string name="device_name">Name</string>
