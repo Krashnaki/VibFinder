@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -39,7 +40,7 @@ public class VibFinderActivity extends Activity {
     private Button mStopVibrationButton;
     private ListView mVibratorsList;
 
-    private LinearLayout mBLEStatusView;
+    private ConstraintLayout mBLEStatusView;
     private TextView mBLEStatusTextView;
     private Button mBLEEnableButton;
 
@@ -142,10 +143,11 @@ public class VibFinderActivity extends Activity {
         mStopVibrationButton = (Button)findViewById(R.id.stopVibrationButton);
         mVibratorsList = (ListView)findViewById(R.id.vibrators_list);
         mBLEStatusTextView = (TextView)findViewById(R.id.ble_status_text_view);
-        mBLEEnableButton = (Button)findViewById(R.id.ble_enable_button);
-        mBLEStatusView = (LinearLayout)findViewById(R.id.layout_enable_bluetooth);
+        mBLEEnableButton = findViewById(R.id.ble_enable_button);
+        mBLEStatusView = findViewById(R.id.layout_enable_bluetooth);
 
         mVibratorListAdapter = new VibratorListAdapter();
+        mVibratorsList.addHeaderView(getLayoutInflater().inflate(R.layout.listheader_vibrator, mVibratorsList, false));
         mVibratorsList.setAdapter(mVibratorListAdapter);
 
         mStartStopButton.setOnClickListener(new View.OnClickListener() {
