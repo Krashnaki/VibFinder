@@ -9,8 +9,8 @@ import com.android.volley.toolbox.Volley;
 
 public class ServerConnectionSingleton {
     private static ServerConnectionSingleton mInstance;
-    private RequestQueue mRequestQueue;
     private static Context mCtx;
+    private RequestQueue mRequestQueue;
 
     private ServerConnectionSingleton(Context context) {
         mCtx = context;

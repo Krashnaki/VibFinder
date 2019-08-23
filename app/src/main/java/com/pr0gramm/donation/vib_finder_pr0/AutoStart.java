@@ -17,8 +17,8 @@ public class AutoStart extends BroadcastReceiver {
      * It will then start the VibFinderService and let it know via an Extra in the intent, that it
      * has been started automatically by the autostart function.
      */
-    public void onReceive(Context context, Intent i){
-        Intent intent = new Intent(context,VibFinderService.class);
+    public void onReceive(Context context, Intent i) {
+        Intent intent = new Intent(context, VibFinderService.class);
         intent.putExtra(VibFinderService.EXTRA_SERVICE_START_MODE, context.getString(R.string.start_mode_autostart));
         context.startService(intent);
         Log.i(TAG, "started service VibFinderService in AutoStart");

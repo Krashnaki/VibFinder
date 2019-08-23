@@ -24,19 +24,6 @@ import java.util.UUID;
  * given Bluetooth LE device.
  */
 public class BluetoothLeService extends Service {
-    private final static String TAG = BluetoothLeService.class.getSimpleName();
-
-    private BluetoothManager mBluetoothManager;
-    private BluetoothAdapter mBluetoothAdapter;
-    private String mBluetoothDeviceAddress = "";
-    private BluetoothGatt mBluetoothGatt;
-    private int mConnectionState = STATE_DISCONNECTED;
-    private boolean mDisconnectRequired = false;
-
-    private static final int STATE_DISCONNECTED = 0;
-    private static final int STATE_CONNECTING = 1;
-    private static final int STATE_CONNECTED = 2;
-
     public final static String ACTION_GATT_CONNECTED =
             "com.pr0gramm.donation.vib_finder.bluetooth.le.ACTION_GATT_CONNECTED";
     public final static String ACTION_GATT_DISCONNECTED =
@@ -55,13 +42,23 @@ public class BluetoothLeService extends Service {
             "com.pr0gramm.donation.vib_finder.bluetooth.le.CHARA_EXAMPLE";
     public final static String SERVICE_UUID =
             "com.pr0gramm.donation.vib_finder.bluetooth.le.SERVICE_UUID";
-
+    private final static String TAG = BluetoothLeService.class.getSimpleName();
+    private static final int STATE_DISCONNECTED = 0;
+    private static final int STATE_CONNECTING = 1;
+    private static final int STATE_CONNECTED = 2;
+    private final IBinder mBinder = new LocalBinder();
+    private BluetoothManager mBluetoothManager;
+    private BluetoothAdapter mBluetoothAdapter;
+    private String mBluetoothDeviceAddress = "";
+    private BluetoothGatt mBluetoothGatt;
+    private int mConnectionState = STATE_DISCONNECTED;
+    private boolean mDisconnectRequired = false;
     // Implements callback methods for GATT events that the app cares about.  For example,
     // connection change and services discovered.
     private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-            if(!gatt.getDevice().getAddress().equals(mBluetoothDeviceAddress)){
+            if (!gatt.getDevice().getAddress().equals(mBluetoothDeviceAddress)) {
                 return;
             }
             String intentAction;
@@ -78,7 +75,7 @@ public class BluetoothLeService extends Service {
                 intentAction = ACTION_GATT_DISCONNECTED;
                 mConnectionState = STATE_DISCONNECTED;
                 Log.i(TAG, "Disconnected from GATT server.");
-                if(mDisconnectRequired){
+                if (mDisconnectRequired) {
                     mDisconnectRequired = false;
                     mBluetoothDeviceAddress = "";
                     //release used resources
@@ -90,7 +87,7 @@ public class BluetoothLeService extends Service {
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-            if(!gatt.getDevice().getAddress().equals(mBluetoothDeviceAddress)){
+            if (!gatt.getDevice().getAddress().equals(mBluetoothDeviceAddress)) {
                 return;
             }
             if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -104,7 +101,7 @@ public class BluetoothLeService extends Service {
         public void onCharacteristicRead(BluetoothGatt gatt,
                                          BluetoothGattCharacteristic characteristic,
                                          int status) {
-            if(!gatt.getDevice().getAddress().equals(mBluetoothDeviceAddress)){
+            if (!gatt.getDevice().getAddress().equals(mBluetoothDeviceAddress)) {
                 return;
             }
             if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -115,7 +112,7 @@ public class BluetoothLeService extends Service {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt,
                                             BluetoothGattCharacteristic characteristic) {
-            if(!gatt.getDevice().getAddress().equals(mBluetoothDeviceAddress)){
+            if (!gatt.getDevice().getAddress().equals(mBluetoothDeviceAddress)) {
                 return;
             }
             broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
@@ -145,12 +142,6 @@ public class BluetoothLeService extends Service {
         sendBroadcast(intent);
     }
 
-    public class LocalBinder extends Binder {
-        BluetoothLeService getService() {
-            return BluetoothLeService.this;
-        }
-    }
-
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
@@ -164,8 +155,6 @@ public class BluetoothLeService extends Service {
         close();
         return super.onUnbind(intent);
     }
-
-    private final IBinder mBinder = new LocalBinder();
 
     /**
      * Initializes a reference to the local Bluetooth adapter.
@@ -189,7 +178,7 @@ public class BluetoothLeService extends Service {
             return false;
         }
 
-        if(!this.getBluetoothEnabled()){
+        if (!this.getBluetoothEnabled()) {
             broadcastUpdate(ACTION_BLUETOOTH_DISABLED);
         }
 
@@ -200,14 +189,13 @@ public class BluetoothLeService extends Service {
      * Connects to the GATT server hosted on the Bluetooth LE device.
      *
      * @param address The device address of the destination device.
-     *
      * @return Return true if the connection is initiated successfully. The connection result
-     *         is reported asynchronously through the
-     *         {@code BluetoothGattCallback#onConnectionStateChange(android.bluetooth.BluetoothGatt, int, int)}
-     *         callback.
+     * is reported asynchronously through the
+     * {@code BluetoothGattCallback#onConnectionStateChange(android.bluetooth.BluetoothGatt, int, int)}
+     * callback.
      */
     public boolean connect(final String address) {
-        if(mConnectionState == STATE_CONNECTING){
+        if (mConnectionState == STATE_CONNECTING) {
             return true;
         }
         if (mBluetoothAdapter == null || address == null) {
@@ -216,7 +204,7 @@ public class BluetoothLeService extends Service {
         }
 
         //Impossible to connect, if BLE adapter disabled
-        if(!this.getBluetoothEnabled()){
+        if (!this.getBluetoothEnabled()) {
             return false;
         }
 
@@ -293,7 +281,7 @@ public class BluetoothLeService extends Service {
             return;
         }
         Log.d(TAG, "readCharacteristic");
-        while(!mBluetoothGatt.readCharacteristic(characteristic));
+        while (!mBluetoothGatt.readCharacteristic(characteristic)) ;
     }
 
     /**
@@ -313,14 +301,14 @@ public class BluetoothLeService extends Service {
 //            BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE)) > 0){
 //
 //        }
-        while(!mBluetoothGatt.writeCharacteristic(characteristic));
+        while (!mBluetoothGatt.writeCharacteristic(characteristic)) ;
     }
 
     /**
      * Enables or disables notification on a give characteristic.
      *
      * @param characteristic Characteristic to act on.
-     * @param enabled If true, enable notification.  False otherwise.
+     * @param enabled        If true, enable notification.  False otherwise.
      */
     public void setCharacteristicNotification(BluetoothGattCharacteristic characteristic,
                                               boolean enabled) {
@@ -331,9 +319,9 @@ public class BluetoothLeService extends Service {
         mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
         BluetoothGattDescriptor descriptor = characteristic.getDescriptor(
                 UUID.fromString(VibGattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
-        if(descriptor != null) {
+        if (descriptor != null) {
             descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-            while(!mBluetoothGatt.writeDescriptor(descriptor));
+            while (!mBluetoothGatt.writeDescriptor(descriptor)) ;
         }
 
     }
@@ -355,18 +343,25 @@ public class BluetoothLeService extends Service {
      *
      * @return true, if bluetooth is enabled, false if not
      */
-    public boolean getBluetoothEnabled(){
+    public boolean getBluetoothEnabled() {
         return mBluetoothAdapter.isEnabled();
     }
 
     /**
      * Enables the device's bluetooth adapter. Should not be called without user interaction
+     *
      * @return
      */
-    public boolean enableBluetooth(){
-        if(mBluetoothAdapter != null){
+    public boolean enableBluetooth() {
+        if (mBluetoothAdapter != null) {
             return mBluetoothAdapter.enable();
         }
         return false;
+    }
+
+    public class LocalBinder extends Binder {
+        BluetoothLeService getService() {
+            return BluetoothLeService.this;
+        }
     }
 }

@@ -10,8 +10,6 @@ import android.util.Log;
 
 
 public class VibDBHelper extends SQLiteOpenHelper {
-    private final static String TAG = VibDBHelper.class.getSimpleName();
-
     public static final String DATABASE_NAME = "Vibrators.db";
     public static final String VIBRATORS_TABLE_NAME = "vibrators";
     public static final String VIBRATORS_COLUMN_NAME = "name";
@@ -20,10 +18,9 @@ public class VibDBHelper extends SQLiteOpenHelper {
     public static final String VIBRATORS_COLUMN_IGNORED = "ignored";
     public static final String VIBRATORS_COLUMN_LAST_ALARM_TIME = "lastAlarmTime";
     public static final String VIBRATORS_COLUMN_LAST_SEEN_TIME = "lastSeenTime";
-
     public static final int VALIDATED_STATE = 1;
     public static final int DISCARDED_STATE = 2;
-
+    private final static String TAG = VibDBHelper.class.getSimpleName();
     private static final int TRUE_INT = 1;
     private static final int FALSE_INT = 0;
 

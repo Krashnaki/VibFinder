@@ -15,30 +15,34 @@ public class VibratorMatch {
     private String lastSeenTime = "00:00";
     private boolean alertEnabled = true;
 
-    public VibratorMatch(String name, String address, long lastSeenTime, boolean alertEnabled){
+    public VibratorMatch(String name, String address, long lastSeenTime, boolean alertEnabled) {
         this.name = name;
         this.address = address;
         this.alertEnabled = alertEnabled;
         setLastSeenTime(lastSeenTime);
     }
 
-    public void setName(String name){
-        this.name = name;
-    }
-
-    public String getName(){
+    public String getName() {
         return name;
     }
 
-    public void setAddress(String address){
-        this.address = address;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getAddress(){
+    public String getAddress() {
         return address;
     }
 
-    public void setLastSeenTime(long time){
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getLastSeenTime() {
+        return lastSeenTime;
+    }
+
+    public void setLastSeenTime(long time) {
         GregorianCalendar calendar = new GregorianCalendar();
         calendar.setTimeInMillis(time);
         int year = calendar.get(Calendar.YEAR);
@@ -49,15 +53,11 @@ public class VibratorMatch {
         this.lastSeenTime = String.format("%02d:%02d", hour, minute);
     }
 
-    public String getLastSeenTime(){
-        return lastSeenTime;
-    }
-
-    public boolean getAlertEnabled(){
+    public boolean getAlertEnabled() {
         return alertEnabled;
     }
 
-    public void toggleAlertEnabled(){
+    public void toggleAlertEnabled() {
         alertEnabled = !alertEnabled;
     }
 }

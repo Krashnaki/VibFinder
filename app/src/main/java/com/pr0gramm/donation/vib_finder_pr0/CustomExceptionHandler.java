@@ -27,13 +27,13 @@ public class CustomExceptionHandler implements Thread.UncaughtExceptionHandler {
         this.localPath = localPath;
         this.url = url;
         this.defaultUEH = Thread.getDefaultUncaughtExceptionHandler();
-        if(this.localPath != null) {
+        if (this.localPath != null) {
             String tempPath = localPath;
-            if(tempPath.charAt(tempPath.length()-1) != '/'){
+            if (tempPath.charAt(tempPath.length() - 1) != '/') {
                 tempPath += "/";
             }
             String path = "";
-            while(tempPath.indexOf('/')!=-1){
+            while (tempPath.indexOf('/') != -1) {
                 int index = tempPath.indexOf('/');
                 path += tempPath.substring(0, index + 1);
                 tempPath = tempPath.substring(index + 1);
