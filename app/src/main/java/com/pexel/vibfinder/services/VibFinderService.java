@@ -61,22 +61,25 @@ import static android.bluetooth.le.ScanSettings.CALLBACK_TYPE_FIRST_MATCH;
 import static android.bluetooth.le.ScanSettings.CALLBACK_TYPE_MATCH_LOST;
 
 public class VibFinderService extends Service {
+
     public final static String ACTION_BLUETOOTH_NOT_USABLE =
-            "com.pr0gramm.donation.vib-finder.ACTION_BLUETOOTH_NOT_USABLE";
+            "com.pexel.vibfinder.ACTION_BLUETOOTH_NOT_USABLE";
     public final static String ACTION_BLUETOOTH_DISABLED =
-            "com.pr0gramm.donation.vib-finder.ACTION_BLUETOOTH_DISABLED";
+            "com.pexel.vibfinder.ACTION_BLUETOOTH_DISABLED";
     public final static String ACTION_BLUETOOTH_ENABLED =
-            "com.pr0gramm.donation.vib-finder.ACTION_BLUETOOTH_ENABLED";
+            "com.pexel.vibfinder.ACTION_BLUETOOTH_ENABLED";
     public final static String ACTION_ALERT_STOPPED =
-            "com.pr0gramm.donation.vib-finder.ACTION_ALERT_STOPPED";
+            "com.pexel.vibfinder.ACTION_ALERT_STOPPED";
     public final static String ACTION_VIBRATOR_DATA_CHANGED =
-            "com.pr0gramm.donation.vib-finder.ACTION_VIBRATOR_DATA_CHANGED";
+            "com.pexel.vibfinder.ACTION_VIBRATOR_DATA_CHANGED";
     public final static String ACTION_FOUND_VIBRATOR =
-            "com.pr0gramm.donation.vib-finder.ACTION_FOUND_VIBRATOR";
+            "com.pexel.vibfinder.ACTION_FOUND_VIBRATOR";
     public final static String EXTRA_DEVICE_NAME =
-            "com.pr0gramm.donation.vib-finder.EXTRA_DEVICE_NAME";
+            "com.pexel.vibfinder.EXTRA_DEVICE_NAME";
     public final static String EXTRA_SERVICE_START_MODE =
-            "com.pr0gramm.donation.vib-finder.EXTRA_SERVICE_START_MODE";
+            "com.pexel.vibfinder.EXTRA_SERVICE_START_MODE";
+
+
     private final static String TAG = VibFinderService.class.getSimpleName();
     private final static int DISCONNECTED = 0;
     private final static int CONNECTING = 1;

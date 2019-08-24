@@ -25,38 +25,47 @@ import java.util.UUID;
  * Service for managing connection and data communication with a GATT server hosted on a
  * given Bluetooth LE device.
  */
-public class BluetoothLeService extends Service {
+public class BluetoothLEService extends Service {
+
     public final static String ACTION_GATT_CONNECTED =
-            "com.pr0gramm.donation.vib_finder.bluetooth.le.ACTION_GATT_CONNECTED";
+            "com.pexel.vibfinder.bluetooth.le.ACTION_GATT_CONNECTED";
     public final static String ACTION_GATT_DISCONNECTED =
-            "com.pr0gramm.donation.vib_finder.bluetooth.le.ACTION_GATT_DISCONNECTED";
+            "com.pexel.vibfinder.bluetooth.le.ACTION_GATT_DISCONNECTED";
     public final static String ACTION_GATT_SERVICES_DISCOVERED =
-            "com.pr0gramm.donation.vib_finder.bluetooth.le.ACTION_GATT_SERVICES_DISCOVERED";
+            "com.pexel.vibfinder.bluetooth.le.ACTION_GATT_SERVICES_DISCOVERED";
     public final static String ACTION_DATA_AVAILABLE =
-            "com.pr0gramm.donation.vib_finder.bluetooth.le.ACTION_DATA_AVAILABLE";
+            "com.pexel.vibfinder.bluetooth.le.ACTION_DATA_AVAILABLE";
     public final static String ACTION_BLUETOOTH_DISABLED =
-            "com.pr0gramm.donation.vib_finder.bluetooth.le.ACTION_BLUETOOTH_DISABLED";
+            "com.pexel.vibfinder.bluetooth.le.ACTION_BLUETOOTH_DISABLED";
     public final static String EXTRA_DATA =
-            "com.pr0gramm.donation.vib_finder.bluetooth.le.EXTRA_DATA";
+            "com.pexel.vibfinder.bluetooth.le.EXTRA_DATA";
     public final static String CHARA_BYTE_ARRAY =
-            "com.pr0gramm.donation.vib_finder.bluetooth.le.CHARA_BYTE_ARRAY";
+            "com.pexel.vibfinder.bluetooth.le.CHARA_BYTE_ARRAY";
     public final static String CHARA_UUID =
-            "com.pr0gramm.donation.vib_finder.bluetooth.le.CHARA_EXAMPLE";
+            "com.pexel.vibfinder.bluetooth.le.CHARA_EXAMPLE";
     public final static String SERVICE_UUID =
-            "com.pr0gramm.donation.vib_finder.bluetooth.le.SERVICE_UUID";
-    private final static String TAG = BluetoothLeService.class.getSimpleName();
+            "com.pexel.vibfinder.bluetooth.le.SERVICE_UUID";
+
+
+    private final static String TAG = BluetoothLEService.class.getSimpleName();
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
+
     private final IBinder mBinder = new LocalBinder();
+
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private String mBluetoothDeviceAddress = "";
     private BluetoothGatt mBluetoothGatt;
     private int mConnectionState = STATE_DISCONNECTED;
     private boolean mDisconnectRequired = false;
-    // Implements callback methods for GATT events that the app cares about.  For example,
-    // connection change and services discovered.
+
+
+    /**
+     * Implements callback methods for GATT events that the app cares about.  For example,
+     * connection change and services discovered.
+     */
     private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -121,10 +130,12 @@ public class BluetoothLeService extends Service {
         }
     };
 
+
     private void broadcastUpdate(final String action) {
         final Intent intent = new Intent(action);
         sendBroadcast(intent);
     }
+
 
     private void broadcastUpdate(final String action,
                                  final BluetoothGattCharacteristic characteristic) {
@@ -158,6 +169,7 @@ public class BluetoothLeService extends Service {
         return super.onUnbind(intent);
     }
 
+
     /**
      * Initializes a reference to the local Bluetooth adapter.
      *
@@ -186,6 +198,7 @@ public class BluetoothLeService extends Service {
 
         return true;
     }
+
 
     /**
      * Connects to the GATT server hosted on the Bluetooth LE device.
@@ -362,8 +375,8 @@ public class BluetoothLeService extends Service {
     }
 
     public class LocalBinder extends Binder {
-        BluetoothLeService getService() {
-            return BluetoothLeService.this;
+        BluetoothLEService getService() {
+            return BluetoothLEService.this;
         }
     }
 }

@@ -13,8 +13,8 @@
     <string name="last_seen">Last seen</string>
     <string name="alert_enabled">Alert</string>
 
-    <string name="preferences_vib_finder_service" translatable="false">com.pr0gramm.donation.vib-finder.preferences_vib_finder_service</string>
-    <string name="preference_search_enabled" translatable="false">com.pr0gramm.donation.vib-finder.preference_search_running</string>
+    <string name="preferences_vib_finder_service" translatable="false">com.pexel.vibfinder.preferences_vib_finder_service</string>
+    <string name="preference_search_enabled" translatable="false">com.pexel.vibfinder.preference_search_running</string>
 
     <string name="start_mode_autostart" translatable="false">autostart</string>
     <string name="start_mode_user" translatable="false">user</string>

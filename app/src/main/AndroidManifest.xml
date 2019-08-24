@@ -47,7 +47,7 @@
         </activity>
 
         <service
-            android:name="com.pexel.vibfinder.services.BluetoothLeService"
+            android:name="com.pexel.vibfinder.services.BluetoothLEService"
             android:enabled="true" />
         <service
             android:name="com.pexel.vibfinder.services.VibFinderService"
