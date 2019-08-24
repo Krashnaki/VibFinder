@@ -1,5 +1,7 @@
 package com.pexel.vibfinder.util;
 
+import android.annotation.SuppressLint;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -45,6 +47,8 @@ public class CustomExceptionHandler implements Thread.UncaughtExceptionHandler {
         }
     }
 
+
+    @SuppressLint("SimpleDateFormat")
     public void uncaughtException(Thread t, Throwable e) {
         //String timestamp = TimestampFormatter.getInstance().getTimestamp();
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy-hh-mm-ss");

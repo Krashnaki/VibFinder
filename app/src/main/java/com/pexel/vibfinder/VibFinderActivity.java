@@ -28,6 +28,7 @@ import android.widget.Toast;
 
 import com.pexel.vibfinder.objects.VibratorMatch;
 import com.pexel.vibfinder.services.VibFinderService;
+import com.pexel.vibfinder.services.VibFinderService.LocalVibFinderServiceBinder;
 import com.pexel.vibfinder.util.CustomExceptionHandler;
 import com.pexel.vibfinder.util.VibDBHelper;
 
@@ -62,7 +63,7 @@ public class VibFinderActivity extends Activity {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             Log.d(TAG, "service connected to VibControlActivity");
-            vibFinderService = ((VibFinderService.LocalVibFinderServiceBinder) service).getService();
+            vibFinderService = ((LocalVibFinderServiceBinder) service).getService();
             if (!vibFinderService.getBluetoothEnabled()) {
                 showBluetoothDisabledView();
             }
@@ -93,17 +94,17 @@ public class VibFinderActivity extends Activity {
 
             final String action = intent.getAction();
 
-            switch (action) {
+            if (action != null) switch (action) {
                 case VibFinderService.ACTION_BLUETOOTH_DISABLED:
                     showBluetoothDisabledView();
+
+
                     break;
-
-
                 case VibFinderService.ACTION_BLUETOOTH_ENABLED:
                     enableBLEView.setVisibility(View.GONE);
+
+
                     break;
-
-
                 case VibFinderService.ACTION_BLUETOOTH_NOT_USABLE:
 
                     //TODO Show user error message
@@ -111,9 +112,9 @@ public class VibFinderActivity extends Activity {
                     Log.e(TAG, "Unable to initialize Bluetooth");
                     exitApplication();
                     finish();
+
+
                     break;
-
-
                 case VibFinderService.ACTION_FOUND_VIBRATOR:
                     stopVibrationButton.setVisibility(View.VISIBLE);
 
@@ -122,13 +123,14 @@ public class VibFinderActivity extends Activity {
                         vibListViewAdapter.addVibrator(vib);
                     }
                     vibListViewAdapter.notifyDataSetChanged();
+
+
                     break;
-
-
                 case VibFinderService.ACTION_ALERT_STOPPED:
                     stopVibrationButton.setVisibility(View.GONE);
-                    break;
 
+
+                    break;
                 case VibFinderService.ACTION_VIBRATOR_DATA_CHANGED:
                     vibListViewAdapter.clear();
                     for (VibratorMatch vib : vibDBHelper.getAllValidatedMatches()) {
@@ -429,11 +431,11 @@ public class VibFinderActivity extends Activity {
         }
 
         @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
+        public View getView(int i, View view, ViewGroup parent) {
             ViewHolder viewHolder;
             // General ListView optimization code.
             if (view == null) {
-                view = mInflator.inflate(R.layout.listitem_vibrator, null);
+                view = mInflator.inflate(R.layout.listitem_vibrator, parent);
                 viewHolder = new ViewHolder();
                 viewHolder.deviceName = view.findViewById(R.id.list_device_name);
                 viewHolder.lastFoundTime = view.findViewById(R.id.list_last_seen_time);

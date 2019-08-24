@@ -85,18 +85,43 @@ public class VibFinderService extends Service {
     private final static int CONNECTING = 1;
     private final static int CONNECTED = 2;
 
-    private final static int MIN_ALERT_INTERVAL = 30000;//3600000; //time in ms that has to pass so that an already alerted device can be alerted again.
-    private final static int VIBRATION_TIME = 10000; //time in ms, that the phone's vibrator is allowed to vibrate max. in case a vibrator has been found
-    private final static int ALARM_INTERVAL = 60 * 1000; //interval in ms in which the alarm will be triggered
-    private final static int MIN_SEND_TO_SERVER_INTERVAL = 3600000; //time in ms that has to pass so that an already sent match will be sent to the server again
-    private final static int LOCATION_SEARCH_TIME = 60000; //time in ms that the phone will search for its current location before sending a found vibrator to the server
+    /**
+     * time in ms that has to pass so that an already alerted device can be alerted again.
+     */
+    private final static int MIN_ALERT_INTERVAL = 30000;//3600000;
+
+    /**
+     * time in ms, that the phone's vibrator is allowed to vibrate max. in case a vibrator has been found
+     */
+    private final static int VIBRATION_TIME = 10000;
+
+    /**
+     * interval in ms in which the alarm will be triggered
+     */
+    private final static int ALARM_INTERVAL = 60 * 1000;
+
+    /**
+     * time in ms that has to pass so that an already sent match will be sent to the server again
+     */
+    private final static int MIN_SEND_TO_SERVER_INTERVAL = 3600000;
+
+    /**
+     * time in ms that the phone will search for its current location before sending a found vibrator to the server
+     */
+    private final static int LOCATION_SEARCH_TIME = 60000;
+
+
     private final static String SEARCHED_MANUFACTURER_NAME = "Amor AG";
+
     // Stops scanning after 10 seconds.
     private static final long SCAN_PERIOD = 10000;
     private static VibFinderService mSelfService = null;
+
     private final IBinder mBinder = new LocalVibFinderServiceBinder();
+
     BluetoothDevice mCurrentDevice;
     LocationManager locationManager;
+
     private BluetoothAdapter mBluetoothAdapter; //only needed to retrieve the ScanAdapter
     private BluetoothLeScanner mLeScanner; //needed to perform the LE Scan
     private boolean mScanning;
@@ -104,6 +129,7 @@ public class VibFinderService extends Service {
     private boolean mAlertActive = false; //is the phone currently vibrating
     private boolean mSearchEnabled = false; //is the search active = is the cron job active
     private Alarm mAlarm = new Alarm(); //used to create a cron job like task
+
     //stuff related to the check if it is a vibrator or not
     private BluetoothGattService mAmorVibService;
     private BluetoothGattCharacteristic mManufacturerNameChara;
@@ -111,18 +137,18 @@ public class VibFinderService extends Service {
     private Handler mHandler; //used to stop the search and vibration after a defined time
     private List<BluetoothDevice> mScanMatches = new ArrayList<>();
     private VibDBHelper mVibDB; //accessing the DB with validated and rejected scanMatches
-    private String requiredAdvServices[] = {VibGattAttributes.ARMOR_VIB_SERVICE, VibGattAttributes.BATTERY_SERVICE};
+    private String[] requiredAdvServices = {VibGattAttributes.ARMOR_VIB_SERVICE, VibGattAttributes.BATTERY_SERVICE};
     private int mConnectionState = DISCONNECTED;
-    private BluetoothLeService mBluetoothLeService;
+    private BluetoothLEService bluetoothLEService;
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
-            mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
-            if (!mBluetoothLeService.initialize()) {
+            bluetoothLEService = ((BluetoothLEService.LocalBinder) service).getService();
+            if (!bluetoothLEService.initialize()) {
                 Log.e(TAG, "Unable to initialize Bluetooth");
                 //unbindService(mServiceConnection);
-                //mBluetoothLeService = null;
+                //bluetoothLEService = null;
                 broadcastUpdate(ACTION_BLUETOOTH_NOT_USABLE);
                 stopSelf();
                 return;
@@ -134,9 +160,10 @@ public class VibFinderService extends Service {
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-            mBluetoothLeService = null;
+            bluetoothLEService = null;
         }
     };
+
     //for gps
     private Location mCurrentLocation = null;
     LocationListener locationListener = new LocationListener() {
@@ -154,6 +181,7 @@ public class VibFinderService extends Service {
         public void onProviderDisabled(String provider) {
         }
     };
+
     private boolean mIsGettingLocation = false;
     private List<BluetoothDevice> mFoundVibrators = Collections.synchronizedList(new LinkedList<BluetoothDevice>());
     // Handles various events fired by the Service.
@@ -166,47 +194,72 @@ public class VibFinderService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
-            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
-                mConnectionState = CONNECTED;
-            } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
-                mConnectionState = DISCONNECTED;
-                //check next found matches, if possible
-                resetForNewDeepTest();
-                deepCheckMatches();
-            } else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
-                boolean success = checkServices(mBluetoothLeService.getSupportedGattServices());
-                if (!success) {
-                    Log.d(TAG, "Not all necessary services found, disconnecting device");
-                    mVibDB.addDiscardedMatch(mCurrentDevice);
-                    mScanMatches.remove(mCurrentDevice);
-                    mBluetoothLeService.disconnect();
-                    return;
-                }
-                //start reading the necessary fields to determine, if it is a vibrator or not
-                else {
-                    Log.d(TAG, "Found all necessary services");
-                    readManufacturerName();
-                }
-            } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
-                handleDataReception(intent);
-            } else if (ACTION_BLUETOOTH_DISABLED.equals(action)) {
-                Log.d(TAG, "Bluetooth disabled");
-                broadcastUpdate(ACTION_BLUETOOTH_DISABLED);
-                mConnectionState = DISCONNECTED;
-                resetForNewDeepTest();
+
+            if (action == null)
+                return;
+
+            switch (action) {
+                case BluetoothLEService.ACTION_GATT_CONNECTED:
+                    mConnectionState = CONNECTED;
+
+
+                    break;
+                case BluetoothLEService.ACTION_GATT_DISCONNECTED:
+                    mConnectionState = DISCONNECTED;
+                    //check next found matches, if possible
+                    resetForNewDeepTest();
+                    deepCheckMatches();
+
+
+                    break;
+                case BluetoothLEService.ACTION_GATT_SERVICES_DISCOVERED:
+
+                    if (checkServices(bluetoothLEService.getSupportedGattServices())) {
+                        Log.d(TAG, "Found all necessary services");
+                        readManufacturerName();
+                    } else {
+                        Log.d(TAG, "Not all necessary services found, disconnecting device");
+                        mVibDB.addDiscardedMatch(mCurrentDevice);
+                        mScanMatches.remove(mCurrentDevice);
+                        bluetoothLEService.disconnect();
+                        return;
+                    }
+
+
+                    break;
+                case BluetoothLEService.ACTION_DATA_AVAILABLE:
+                    handleDataReception(intent);
+
+
+                    break;
+                case ACTION_BLUETOOTH_DISABLED:
+                    Log.d(TAG, "Bluetooth disabled");
+                    broadcastUpdate(ACTION_BLUETOOTH_DISABLED);
+                    mConnectionState = DISCONNECTED;
+                    resetForNewDeepTest();
+                    break;
             }
+
+
             if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+
                 final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
                         BluetoothAdapter.ERROR);
+
+
                 switch (state) {
                     case BluetoothAdapter.STATE_OFF:
                         //only broadcast BLUETOOTH_DISABLED when the adapter is really turned off
                         broadcastUpdate(ACTION_BLUETOOTH_DISABLED);
+
+
                         break;
                     case BluetoothAdapter.STATE_TURNING_OFF:
                         //already cancel a possible running deepCheck as the BLE Adapter isn't turned on any more
                         mConnectionState = DISCONNECTED;
                         resetForNewDeepTest();
+
+
                         break;
                     case BluetoothAdapter.STATE_ON:
                         if (mLeScanner == null && mBluetoothAdapter != null) {
@@ -222,6 +275,8 @@ public class VibFinderService extends Service {
                         resetForNewDeepTest();
                         deepCheckMatches();
                         broadcastUpdate(ACTION_BLUETOOTH_ENABLED);
+
+
                         break;
                     case BluetoothAdapter.STATE_TURNING_ON:
                         break;
@@ -229,6 +284,8 @@ public class VibFinderService extends Service {
             }
         }
     };
+
+
     /**
      * Callback function that will be called if a BLE Device whose advertised characteristics match
      * the criteria given in the filter has been found. This function will then pass it to
@@ -250,13 +307,14 @@ public class VibFinderService extends Service {
 
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
-        intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
+        intentFilter.addAction(BluetoothLEService.ACTION_GATT_CONNECTED);
+        intentFilter.addAction(BluetoothLEService.ACTION_GATT_DISCONNECTED);
+        intentFilter.addAction(BluetoothLEService.ACTION_GATT_SERVICES_DISCOVERED);
+        intentFilter.addAction(BluetoothLEService.ACTION_DATA_AVAILABLE);
         intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         return intentFilter;
     }
+
 
     /**
      * This function initializes all the service and characteristic variables.
@@ -279,11 +337,10 @@ public class VibFinderService extends Service {
                 mAmorVibService = s;
             }
         }
-        if (mManufacturerNameChara == null || mAmorVibService == null) {
-            return false;
-        }
-        return true;
+
+        return mManufacturerNameChara != null && mAmorVibService != null;
     }
+
 
     /**
      * This function handles the data reception from the remote device.
@@ -295,16 +352,16 @@ public class VibFinderService extends Service {
     private void handleDataReception(Intent intent) {
         Log.d(TAG, "handleDataReception");
         //characteristic UUID of the characteristic written to
-        String cUuid = intent.getStringExtra(BluetoothLeService.CHARA_UUID);
+        String cUuid = intent.getStringExtra(BluetoothLEService.CHARA_UUID);
         //service UUID of the characteristic written to
-        String sUuid = intent.getStringExtra(BluetoothLeService.SERVICE_UUID);
+        String sUuid = intent.getStringExtra(BluetoothLEService.SERVICE_UUID);
         //Data written to the characteristic
-        byte[] data = intent.getByteArrayExtra(BluetoothLeService.CHARA_BYTE_ARRAY);
+        byte[] data = intent.getByteArrayExtra(BluetoothLEService.CHARA_BYTE_ARRAY);
         //Select action based on the Service, that was written to
         Log.d(TAG, "sUuid: " + sUuid + "; cUuid: " + cUuid);
-        if (sUuid.equals(VibGattAttributes.DEVICE_INFORMATION_SERVICE)) {
+        if (VibGattAttributes.DEVICE_INFORMATION_SERVICE.equals(sUuid)) {
             //Select action base on the characteristic, that was written to
-            if (cUuid.equals(VibGattAttributes.MANUFACTURER_NAME_CHARA)) {
+            if (VibGattAttributes.MANUFACTURER_NAME_CHARA.equals(cUuid)) {
                 mManufacturerName = new String(data);
                 Log.d(TAG, "Manufacturer Name: " + mManufacturerName);
                 //// TODO: 29.11.2016 if there were more characteristics to check, do that here
@@ -313,15 +370,17 @@ public class VibFinderService extends Service {
         }
     }
 
+
     /**
      * This function starts/stops scanning LE Devices around the Phone for possible vibrators
      *
      * @param enable true: start scanning; false: stop scanning
      */
     private void scanLeDevice(final boolean enable) {
-        if (mLeScanner == null || mBluetoothLeService == null || !mBluetoothLeService.getBluetoothEnabled()) {
+        if (mLeScanner == null || bluetoothLEService == null || !bluetoothLEService.getBluetoothEnabled()) {
             return;
         }
+
         if (enable) {
             // Stops scanning after a pre-defined scan period.
             mHandler.postDelayed(new Runnable() {
@@ -346,6 +405,7 @@ public class VibFinderService extends Service {
         }
     }
 
+
     /**
      * This function can handle a found scan match, that means it will be called once a BLE
      * Device whose advertised services match the criteria in the filter.
@@ -367,6 +427,7 @@ public class VibFinderService extends Service {
         }
     }
 
+
     /**
      * This function causes the alert of the found match. It will make the phone vibrate.
      *
@@ -376,7 +437,7 @@ public class VibFinderService extends Service {
         final Intent intent = new Intent(ACTION_FOUND_VIBRATOR);
         intent.putExtra(EXTRA_DEVICE_NAME, device.getName());
         sendBroadcast(intent);
-        long pattern[] = {0, 200, 200, 200, 200, 200, 200, 800, 200};
+        long[] pattern = {0, 200, 200, 200, 200, 200, 200, 800, 200};
         mVibrator.vibrate(pattern, 0);
         mHandler.postDelayed(new Runnable() {
             @Override
@@ -390,6 +451,7 @@ public class VibFinderService extends Service {
         startActivity(dialogIntent);
         mAlertActive = true;
     }
+
 
     /**
      * This Function handles the mLastAlertTime variable and alerts the found device if the time is
@@ -405,6 +467,7 @@ public class VibFinderService extends Service {
             mVibDB.setLastAlertTime(device, currentTime.getTimeInMillis());
             alertMatch(device);
         }
+
         //send match to server
         if (currentTime.getTimeInMillis() >= MIN_ALERT_INTERVAL + lastAlertedTime) {
             mFoundVibrators.add(device);
@@ -418,27 +481,28 @@ public class VibFinderService extends Service {
                         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
                         mIsGettingLocation = true;
                     } else {
-                        sendToServer();
+                        //sendToServer();
                     }
                     mHandler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
                             try {
                                 locationManager.removeUpdates(locationListener);
-                            } catch (SecurityException e) {
-                            }
+                            } catch (Exception ignored) {}
+
                             mIsGettingLocation = false;
-                            sendToServer();
+                            //sendToServer();
                         }
                     }, LOCATION_SEARCH_TIME);
                 } else {
-                    sendToServer();
+                    //sendToServer();
                 }
             }
         }
         mVibDB.setLastSeenTime(device, currentTime.getTimeInMillis());
         broadcastUpdate(ACTION_VIBRATOR_DATA_CHANGED);
     }
+
 
     private void sendToServer() {
         Log.d(TAG, "sending to server");
@@ -447,11 +511,6 @@ public class VibFinderService extends Service {
                     + "&name=" + d.getName() + "&time=" + mVibDB.getLastSeenTime(d)
                     + "&position=" + (mCurrentLocation != null ? Location.convert(mCurrentLocation.getLatitude(), Location.FORMAT_DEGREES) : 0)
                     + "-" + (mCurrentLocation != null ? Location.convert(mCurrentLocation.getLongitude(), Location.FORMAT_DEGREES) : 0));
-
-            if (d == null) {
-                Log.d(TAG, "Device null");
-                continue;
-            }
 
             JsonObjectRequest jsObjRequest = new JsonObjectRequest
                     (Request.Method.GET, "https://vibpost.000webhostapp.com/post.php?address=" + d.getAddress()
@@ -491,6 +550,7 @@ public class VibFinderService extends Service {
 
     }
 
+
     /**
      * This function initiates a deep check of a found scanMatch. That means that this device's
      * characteristics will be read and compared to the required values so that it can be a
@@ -502,18 +562,19 @@ public class VibFinderService extends Service {
         if (mConnectionState != DISCONNECTED) {
             return;
         }
-        if (mBluetoothLeService == null || !mBluetoothLeService.getBluetoothEnabled()) {
+        if (bluetoothLEService == null || !bluetoothLEService.getBluetoothEnabled()) {
             return;
         }
         if (mScanMatches.isEmpty()) {
             return;
         }
         mCurrentDevice = mScanMatches.get(0);
-        boolean success = mBluetoothLeService.connect(mCurrentDevice.getAddress());
+        boolean success = bluetoothLEService.connect(mCurrentDevice.getAddress());
         if (success) {
             mConnectionState = CONNECTING;
         }
     }
+
 
     /**
      * This function finishes the deepCheck, which means, that it will compare all the read
@@ -543,8 +604,9 @@ public class VibFinderService extends Service {
             }
         }
         //get ready for a new check
-        mBluetoothLeService.disconnect();
+        bluetoothLEService.disconnect();
     }
+
 
     /**
      * This function resets the variables relevant to determining if a device is a vibrator or not.
@@ -554,6 +616,7 @@ public class VibFinderService extends Service {
         mManufacturerNameChara = null;
         mManufacturerName = "";
     }
+
 
     /**
      * This function starts the regular search for vibrators. It will start the Android equivalent
@@ -578,6 +641,7 @@ public class VibFinderService extends Service {
         editor.commit();
     }
 
+
     /**
      * This function stops the regular search for vibrators. It will stop the Android equivalent to
      * a cron job, an Alarm.
@@ -597,12 +661,14 @@ public class VibFinderService extends Service {
         editor.commit();
     }
 
+
     /**
      * @return true if the regular sear for vibrators is going on. That does not mean that the phone is performing a scan right in this moment!
      */
     public boolean getSearchStarted() {
         return mSearchEnabled;
     }
+
 
     /*
      * All those functions are used to communicate with the Activities. They send broadcasts
@@ -613,13 +679,15 @@ public class VibFinderService extends Service {
         sendBroadcast(intent);
     }
 
+
     private void readManufacturerName() {
-        if (mBluetoothLeService != null && mBluetoothLeService.getBluetoothEnabled()
+        if (bluetoothLEService != null && bluetoothLEService.getBluetoothEnabled()
                 && mManufacturerNameChara != null) {
-            mBluetoothLeService.readCharacteristic(mManufacturerNameChara);
+            bluetoothLEService.readCharacteristic(mManufacturerNameChara);
             Log.d(TAG, "reading manufacturer name");
         }
     }
+
 
     /**
      * This function starts scanning for BLE Devices
@@ -627,6 +695,7 @@ public class VibFinderService extends Service {
     public void startScanning() {
         scanLeDevice(true);
     }
+
 
     /**
      * This function stops the Alert that can be started when a vibrator has been found.
@@ -637,6 +706,7 @@ public class VibFinderService extends Service {
         broadcastUpdate(ACTION_ALERT_STOPPED);
     }
 
+
     /**
      * This function is used to check if Bluetooth is enabled on the phone.
      *
@@ -646,17 +716,19 @@ public class VibFinderService extends Service {
         return mBluetoothAdapter.isEnabled();
     }
 
+
     /**
      * This function enables the device's bluetooth adapter. It should not be called without user interaction.
      *
      * @return true on success, false otherwise.
      */
     public boolean enableBluetooth() {
-        if (mBluetoothLeService != null) {
-            return mBluetoothLeService.enableBluetooth();
+        if (bluetoothLEService != null) {
+            return bluetoothLEService.enableBluetooth();
         }
         return false;
     }
+
 
     /**
      * This function is used to find out if an alert is going on, that means, if the phone is
@@ -667,6 +739,7 @@ public class VibFinderService extends Service {
     public boolean getAlertActive() {
         return mAlertActive;
     }
+
 
     @Override
     public void onCreate() {
@@ -681,7 +754,7 @@ public class VibFinderService extends Service {
 
         mVibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
 
-        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+        Intent gattServiceIntent = new Intent(this, BluetoothLEService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
         // Initializes a Bluetooth adapter.  For API level 18 and above, get a reference to
@@ -723,6 +796,7 @@ public class VibFinderService extends Service {
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
     }
 
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
@@ -739,25 +813,28 @@ public class VibFinderService extends Service {
         return START_STICKY;
     }
 
+
     @Override
     public IBinder onBind(Intent intent) {
         return this.mBinder;
     }
+
 
     @Override
     public boolean onUnbind(Intent intent) {
         return super.onUnbind(intent);
     }
 
+
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
-        if (mConnectionState == CONNECTED && mBluetoothLeService != null) {
-            mBluetoothLeService.disconnect();
+        if (mConnectionState == CONNECTED && bluetoothLEService != null) {
+            bluetoothLEService.disconnect();
             mConnectionState = DISCONNECTED;
         }
         unbindService(mServiceConnection);
-        mBluetoothLeService = null;
+        bluetoothLEService = null;
 
         mSelfService = null;
 
@@ -767,6 +844,7 @@ public class VibFinderService extends Service {
         unregisterReceiver(mGattUpdateReceiver);
     }
 
+
     /**
      * This class is used to create a cron like job for the search for vibrators.
      * It needs to be static because it is registered in the manifest as a receiver.
@@ -775,7 +853,7 @@ public class VibFinderService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-            PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "vibFinderWakeLock");
+            PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "vibfinder:alarmwakelock");
             wl.acquire();
             Log.d(TAG, "in Alarm");
 
@@ -805,7 +883,7 @@ public class VibFinderService extends Service {
     }
 
     public class LocalVibFinderServiceBinder extends Binder {
-        VibFinderService getService() {
+        public VibFinderService getService() {
             return VibFinderService.this;
         }
     }

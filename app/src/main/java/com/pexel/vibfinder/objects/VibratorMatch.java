@@ -1,5 +1,7 @@
 package com.pexel.vibfinder.objects;
 
+import android.annotation.SuppressLint;
+
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
@@ -42,6 +44,7 @@ public class VibratorMatch {
         return lastSeenTime;
     }
 
+    @SuppressLint("DefaultLocale")
     public void setLastSeenTime(long time) {
         GregorianCalendar calendar = new GregorianCalendar();
         calendar.setTimeInMillis(time);
