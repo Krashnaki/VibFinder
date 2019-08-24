@@ -1,5 +1,6 @@
 package com.pexel.vibfinder;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -7,11 +8,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -38,7 +42,7 @@ import java.util.Objects;
 public class VibFinderActivity extends Activity {
     private final static String TAG = VibFinderActivity.class.getSimpleName();
 
-    private static final int REQUEST_ENABLE_BT = 1;
+    private static final int REQUEST_ENABLE_BT = 20;
 
     boolean doubleBackToExitPressedOnce = false;
 
@@ -161,9 +165,23 @@ public class VibFinderActivity extends Activity {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "create");
 
+        /*
+          Ask for Location (needed for Bluetooth)
+         */
+
+        int i = 0;
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_CONTACTS},
+                    REQUEST_ENABLE_BT);
+
+        }
+
+
         if (!(Thread.getDefaultUncaughtExceptionHandler() instanceof CustomExceptionHandler)) {
             Thread.setDefaultUncaughtExceptionHandler(new CustomExceptionHandler(
-                    Environment.getExternalStorageDirectory() + "/media/development/Vib-Finder", null));
+                    Environment.getExternalStorageDirectory() + "/media/development/VibFinder", null));
         }
 
         setContentView(R.layout.activity_vib_finder);
@@ -225,6 +243,19 @@ public class VibFinderActivity extends Activity {
         Objects.requireNonNull(getActionBar()).setTitle(getString(R.string.title_activity_vib_finder));
         getActionBar().setDisplayHomeAsUpEnabled(false);
 
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_ENABLE_BT:
+                if (grantResults.length <= 0
+                        || grantResults[0] != PackageManager.PERMISSION_GRANTED)
+                    finish();
+
+                break;
+
+        }
     }
 
     @Override
@@ -325,14 +356,6 @@ public class VibFinderActivity extends Activity {
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
-
-//    /**
-//     * Creates a dialog demanding activation of bluetooth.
-//     */
-//    private void demandBluetoothActivation(){
-//       Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-//        startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-//    }
 
     @Override
     public void onBackPressed() {

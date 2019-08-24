@@ -184,12 +184,15 @@ public class VibFinderService extends Service {
 
     private boolean mIsGettingLocation = false;
     private List<BluetoothDevice> mFoundVibrators = Collections.synchronizedList(new LinkedList<BluetoothDevice>());
+
+
     // Handles various events fired by the Service.
     // ACTION_GATT_CONNECTED: connected to a GATT server.
     // ACTION_GATT_DISCONNECTED: disconnected from a GATT server.
     // ACTION_GATT_SERVICES_DISCOVERED: discovered GATT services.
     // ACTION_DATA_AVAILABLE: received data from the device.  This can be a result of read
     //                        or notification operations.
+
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -297,6 +300,7 @@ public class VibFinderService extends Service {
                 @Override
                 public void onScanResult(int callbackType, final ScanResult result) {
                     Log.d(TAG, "onScanResult");
+
                     if (callbackType == CALLBACK_TYPE_ALL_MATCHES || callbackType == CALLBACK_TYPE_FIRST_MATCH) {
                         handleFoundScanMatch(result.getDevice());
                     } else if (callbackType == CALLBACK_TYPE_MATCH_LOST) {
@@ -654,6 +658,7 @@ public class VibFinderService extends Service {
         }
         mSearchEnabled = false;
         mAlarm.cancelAlarm(this);
+        mLeScanner.stopScan(mLeScanCallback);
         //remember that there is no alarm running in case that the OS kills the service and starts it again
         SharedPreferences sharedPref = getSharedPreferences(getString(R.string.preferences_vib_finder_service), Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
@@ -747,7 +752,7 @@ public class VibFinderService extends Service {
 
         if (!(Thread.getDefaultUncaughtExceptionHandler() instanceof CustomExceptionHandler)) {
             Thread.setDefaultUncaughtExceptionHandler(new CustomExceptionHandler(
-                    Environment.getExternalStorageDirectory() + "/media/development/Vib-Finder", null));
+                    Environment.getExternalStorageDirectory() + "/media/development/VibFinder", null));
         }
 
         mHandler = new Handler();
