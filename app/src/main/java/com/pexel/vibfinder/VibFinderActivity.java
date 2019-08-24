@@ -198,39 +198,32 @@ public class VibFinderActivity extends Activity {
         vibList.addHeaderView(getLayoutInflater().inflate(R.layout.listheader_vibrator, vibList, false));
         vibList.setAdapter(vibListViewAdapter);
 
-        searchButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if (vibFinderService != null) {
-                    if (vibFinderService.getSearchStarted()) {
-                        vibFinderService.stopSearch();
-                        searchButton.setText(getString(R.string.startSearch));
-                    } else {
-                        vibFinderService.startSearch();
-                        searchButton.setText(getString(R.string.stopSearch));
-                    }
+        searchButton.setOnClickListener(v -> {
+            if (vibFinderService != null) {
+                if (vibFinderService.getSearchStarted()) {
+                    vibFinderService.stopSearch();
+                    searchButton.setText(getString(R.string.startSearch));
+                } else {
+                    vibFinderService.startSearch();
+                    searchButton.setText(getString(R.string.stopSearch));
                 }
             }
         });
 
-        stopVibrationButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if (vibFinderService != null) {
-                    vibFinderService.stopAlert();
-                }
+        stopVibrationButton.setOnClickListener(v -> {
+            if (vibFinderService != null) {
+                vibFinderService.stopAlert();
             }
         });
 
-        enableBLEButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (vibFinderService != null) {
-                    if (!vibFinderService.enableBluetooth()) {
-                        return;
-                    }
-                    enableBLEButton.setVisibility(View.INVISIBLE);
-                    enableBLEView.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.ble_enabling_color));
-                    BLEstatusTextView.setText(getString(R.string.enabling_bluetooth));
+        enableBLEButton.setOnClickListener(v -> {
+            if (vibFinderService != null) {
+                if (!vibFinderService.enableBluetooth()) {
+                    return;
                 }
+                enableBLEButton.setVisibility(View.INVISIBLE);
+                enableBLEView.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.ble_enabling_color));
+                BLEstatusTextView.setText(getString(R.string.enabling_bluetooth));
             }
         });
 
@@ -247,14 +240,10 @@ public class VibFinderActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case REQUEST_ENABLE_BT:
-                if (grantResults.length <= 0
-                        || grantResults[0] != PackageManager.PERMISSION_GRANTED)
-                    finish();
-
-                break;
-
+        if (requestCode == REQUEST_ENABLE_BT) {
+            if (grantResults.length <= 0
+                    || grantResults[0] != PackageManager.PERMISSION_GRANTED)
+                finish();
         }
     }
 
@@ -367,13 +356,7 @@ public class VibFinderActivity extends Activity {
         this.doubleBackToExitPressedOnce = true;
         Toast.makeText(this, getString(R.string.press_back_again_to_exit), Toast.LENGTH_SHORT).show();
 
-        new Handler().postDelayed(new Runnable() {
-
-            @Override
-            public void run() {
-                doubleBackToExitPressedOnce = false;
-            }
-        }, 2000);
+        new Handler().postDelayed(() -> doubleBackToExitPressedOnce = false, 2000);
     }
 
     /**

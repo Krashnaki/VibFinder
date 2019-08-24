@@ -184,7 +184,7 @@ public class VibFinderService extends Service {
     };
 
     private boolean mIsGettingLocation = false;
-    private List<BluetoothDevice> mFoundVibrators = Collections.synchronizedList(new LinkedList<BluetoothDevice>());
+    private List<BluetoothDevice> mFoundVibrators = Collections.synchronizedList(new LinkedList<>());
 
 
     // Handles various events fired by the Service.
@@ -395,12 +395,9 @@ public class VibFinderService extends Service {
 
         if (enable) {
             // Stops scanning after a pre-defined scan period.
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    mScanning = false;
-                    mLeScanner.stopScan(mLeScanCallback);
-                }
+            mHandler.postDelayed(() -> {
+                mScanning = false;
+                mLeScanner.stopScan(mLeScanCallback);
             }, SCAN_PERIOD);
 
             mScanning = true;
@@ -457,12 +454,7 @@ public class VibFinderService extends Service {
         sendBroadcast(intent);
         long[] pattern = {0, 200, 200, 200, 200, 200, 200, 800, 200};
         mVibrator.vibrate(pattern, 0);
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                stopAlert();
-            }
-        }, VIBRATION_TIME);
+        mHandler.postDelayed(this::stopAlert, VIBRATION_TIME);
         //open activity
         Intent dialogIntent = new Intent(this, VibFinderActivity.class);
         dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -501,16 +493,13 @@ public class VibFinderService extends Service {
                     } else {
                         //sendToServer();
                     }
-                    mHandler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                locationManager.removeUpdates(locationListener);
-                            } catch (Exception ignored) {}
+                    mHandler.postDelayed(() -> {
+                        try {
+                            locationManager.removeUpdates(locationListener);
+                        } catch (Exception ignored) {}
 
-                            mIsGettingLocation = false;
-                            //sendToServer();
-                        }
+                        mIsGettingLocation = false;
+                        //sendToServer();
                     }, LOCATION_SEARCH_TIME);
                 } else {
                     //sendToServer();
@@ -535,30 +524,22 @@ public class VibFinderService extends Service {
                             + "&name=" + d.getName() + "&time=" + mVibDB.getLastSeenTime(d)
                             + "&position=" + (mCurrentLocation != null ? Location.convert(mCurrentLocation.getLatitude(), Location.FORMAT_DEGREES) : 0)
                             + "-" + (mCurrentLocation != null ? Location.convert(mCurrentLocation.getLongitude(), Location.FORMAT_DEGREES) : 0),
-                            null, new Response.Listener<JSONObject>() {
+                            null, response -> {
+                                Log.d("SIGNUP", response.toString());
 
-                        @Override
-                        public void onResponse(JSONObject response) {
-                            Log.d("SIGNUP", response.toString());
-
-                            if (response.has("success")) {
-                                Log.d(TAG, "sending to server successfull");
+                                if (response.has("success")) {
+                                    Log.d(TAG, "sending to server successfull");
 
 
-                            } else {
-                                Log.d(TAG, "sending to server failes");
+                                } else {
+                                    Log.d(TAG, "sending to server failes");
 
-                            }
-                        }
-                    }, new Response.ErrorListener() {
+                                }
+                            }, error -> {
+                                Log.d(TAG, "sending to server VolleyError" + error + "\n" + error.getMessage());
+                                error.printStackTrace();
 
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            Log.d(TAG, "sending to server VolleyError" + error + "\n" + error.getMessage());
-                            error.printStackTrace();
-
-                        }
-                    });
+                            });
 
             // Access the RequestQueue through your singleton class.
             ServerConnectionSingleton.getInstance(this).addToRequestQueue(jsObjRequest);
