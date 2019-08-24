@@ -1,4 +1,4 @@
-package com.pexel.vibfinder;
+package com.pexel.vibfinder.services;
 
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
@@ -41,6 +41,12 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.pexel.vibfinder.util.CustomExceptionHandler;
+import com.pexel.vibfinder.R;
+import com.pexel.vibfinder.util.ServerConnectionSingleton;
+import com.pexel.vibfinder.util.VibDBHelper;
+import com.pexel.vibfinder.VibFinderActivity;
+import com.pexel.vibfinder.util.VibGattAttributes;
 
 import org.json.JSONObject;
 

@@ -1,4 +1,4 @@
-package com.pexel.vibfinder;
+package com.pexel.vibfinder.objects;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;

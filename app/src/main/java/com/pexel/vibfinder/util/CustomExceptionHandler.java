@@ -1,4 +1,4 @@
-package com.pexel.vibfinder;
+package com.pexel.vibfinder.util;
 
 import java.io.BufferedWriter;
 import java.io.File;

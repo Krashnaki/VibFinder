@@ -1,9 +1,12 @@
-package com.pexel.vibfinder;
+package com.pexel.vibfinder.util;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+
+import com.pexel.vibfinder.R;
+import com.pexel.vibfinder.services.VibFinderService;
 
 /**
  * Class that is only used to handle the autostart. The onReceive method will be called after the

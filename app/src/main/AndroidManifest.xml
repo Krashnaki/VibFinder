@@ -27,8 +27,8 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
 
-        <receiver android:name="com.pexel.vibfinder.VibFinderService$Alarm" />
-        <receiver android:name="com.pexel.vibfinder.AutoStart">
+        <receiver android:name="com.pexel.vibfinder.services.VibFinderService$Alarm" />
+        <receiver android:name="com.pexel.vibfinder.util.AutoStart">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
@@ -47,10 +47,10 @@
         </activity>
 
         <service
-            android:name="com.pexel.vibfinder.BluetoothLeService"
+            android:name="com.pexel.vibfinder.services.BluetoothLeService"
             android:enabled="true" />
         <service
-            android:name="com.pexel.vibfinder.VibFinderService"
+            android:name="com.pexel.vibfinder.services.VibFinderService"
             android:enabled="true"
             android:exported="false" />
 

@@ -1,4 +1,4 @@
-package com.pexel.vibfinder;
+package com.pexel.vibfinder.util;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.ContentValues;
@@ -7,6 +7,8 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+
+import com.pexel.vibfinder.objects.VibratorMatch;
 
 
 public class VibDBHelper extends SQLiteOpenHelper {
