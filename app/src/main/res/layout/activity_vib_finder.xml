@@ -34,6 +34,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="#0000"
+            android:paddingStart="5dp"
+            android:paddingEnd="10dp"
             android:text="@string/enable_button"
             android:textColor="@color/ble_enable_text_color"
             android:textSize="8pt"

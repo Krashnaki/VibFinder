@@ -1,4 +1,4 @@
-package com.pr0gramm.donation.vib_finder_pr0;
+package com.pexel.vibfinder;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -441,7 +441,7 @@ public class VibFinderActivity extends Activity {
             VibratorMatch vibrator = mVibrators.get(i);
             String name = vibrator.getName();
             String time = vibrator.getLastSeenTime();
-            
+
             viewHolder.alertEnabled.setChecked(vibrator.getAlertEnabled());
             viewHolder.deviceName.setText(name);
             viewHolder.lastFoundTime.setText(time);

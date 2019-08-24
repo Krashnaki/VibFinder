@@ -1,4 +1,4 @@
-package com.pr0gramm.donation.vib_finder_pr0;
+package com.pexel.vibfinder;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;

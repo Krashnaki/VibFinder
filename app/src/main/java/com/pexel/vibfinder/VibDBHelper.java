@@ -1,4 +1,4 @@
-package com.pr0gramm.donation.vib_finder_pr0;
+package com.pexel.vibfinder;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.ContentValues;
