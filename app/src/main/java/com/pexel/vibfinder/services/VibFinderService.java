@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
@@ -329,20 +330,24 @@ public class VibFinderService extends Service {
      * @return True if all necessary services and characteristics are available, false otherwise
      */
     private boolean checkServices(List<BluetoothGattService> services) {
-        for (BluetoothGattService s : services) {
-            String uuid = s.getUuid().toString();
-            if (uuid.equals(VibGattAttributes.DEVICE_INFORMATION_SERVICE)) {
-                for (BluetoothGattCharacteristic c : s.getCharacteristics()) {
-                    if (c.getUuid().toString().equals(VibGattAttributes.MANUFACTURER_NAME_CHARA)) {
-                        mManufacturerNameChara = c;
-                    }
+
+        String uuid;
+        boolean matchingManufacturer = false;
+        boolean matchingControlService = false;
+
+        for (BluetoothGattService service : services) {
+            uuid = service.getUuid().toString();
+
+            if (uuid.equals(VibGattAttributes.ARMOR_VIB_SERVICE)) {
+                matchingControlService = true;
+            } else if (uuid.equals(VibGattAttributes.DEVICE_INFORMATION_SERVICE)) {
+                for (BluetoothGattCharacteristic c : service.getCharacteristics()) {
+                    matchingManufacturer = matchingManufacturer
+                            || c.getUuid().toString().equals(VibGattAttributes.MANUFACTURER_NAME_CHARA);
                 }
-            } else if (uuid.equals(VibGattAttributes.ARMOR_VIB_SERVICE)) {
-                mAmorVibService = s;
             }
         }
-
-        return mManufacturerNameChara != null && mAmorVibService != null;
+        return matchingManufacturer && matchingControlService;
     }
 
 
@@ -381,6 +386,9 @@ public class VibFinderService extends Service {
      * @param enable true: start scanning; false: stop scanning
      */
     private void scanLeDevice(final boolean enable) {
+
+        Log.d("scanLEDevice", "started");
+
         if (mLeScanner == null || bluetoothLEService == null || !bluetoothLEService.getBluetoothEnabled()) {
             return;
         }
@@ -402,7 +410,13 @@ public class VibFinderService extends Service {
             for (String s : requiredAdvServices) {
                 filterList.add(new ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString(s)).build());
             }
-            mLeScanner.startScan(filterList, settings, mLeScanCallback);
+            List<ScanFilter> scanFilters = new ArrayList<>();
+            scanFilters.add(new ScanFilter.Builder()
+                    .setServiceUuid(
+                        ParcelUuid.fromString("50300001-0020-4bd4-bbd5-a6920e4c5653"),
+                        ParcelUuid.fromString("10111111-1110-1111-1111-111111111111"))
+                    .build());
+            mLeScanner.startScan(scanFilters, settings, mLeScanCallback);
         } else {
             mScanning = false;
             mLeScanner.stopScan(mLeScanCallback);
