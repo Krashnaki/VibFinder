@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Vib-Finder</string>
+    <string name="app_name">VibFinder</string>
     <string name="bluetooth_disabled">Bluetoothadapter deaktiviert.</string>
     <string name="enable_button">AKTIVIEREN</string>
     <string name="enabling_bluetooth">Bluetooth wird aktiviert…</string>

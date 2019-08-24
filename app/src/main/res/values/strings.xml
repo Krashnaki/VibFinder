@@ -1,12 +1,12 @@
 <resources>
-    <string name="app_name">Vib-Finder</string>
+    <string name="app_name">VibFinder</string>
 
     <string name="title_activity_vib_finder">VibFinder</string>
     <string name="stopVibration">Stop Vibration</string>
     <string name="startSearch">Start Search</string>
     <string name="stopSearch">Stop Search</string>
     <string name="bluetooth_disabled">Bluetooth adapter is disabled.</string>
-    <string name="enabling_bluetooth">Enabling bluetooth adapter...</string>
+    <string name="enabling_bluetooth">Enabling bluetooth adapter…</string>
     <string name="enable_button">ENABLE</string>
     <string name="press_back_again_to_exit">Press back again to STOP the search and exit.</string>
     <string name="device_name">Device name</string>

@@ -25,7 +25,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        tools:ignore="GoogleAppIndexingWarning">
+        tools:ignore="AllowBackup,GoogleAppIndexingWarning">
 
         <receiver android:name="com.pexel.vibfinder.services.VibFinderService$Alarm" />
         <receiver android:name="com.pexel.vibfinder.util.AutoStart">
