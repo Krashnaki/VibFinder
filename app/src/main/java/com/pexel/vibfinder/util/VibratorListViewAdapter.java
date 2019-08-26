@@ -1,56 +1,53 @@
-package com.pexel.vibfinder;
+package com.pexel.vibfinder.util;
 
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+
+import com.pexel.vibfinder.R;
 import com.pexel.vibfinder.objects.VibratorMatch;
-import com.pexel.vibfinder.util.VibDBHelper;
 
 import java.util.ArrayList;
 
-/**
- * Adapter for holding validated matches, thus found vibrators.
- */
-public class VibratorListAdapter extends ArrayAdapter<VibratorMatch> {
+public class VibratorListViewAdapter extends ArrayAdapter<VibratorMatch> {
 
-    private ArrayList<VibratorMatch> mVibrators;
     private Context context;
+    private ArrayList<VibratorMatch> vibrators;
 
-    public VibratorListAdapter(Context context) {
+    public VibratorListViewAdapter(@NonNull Context context) {
         super(context, R.layout.listitem_vibrator);
         this.context = context;
-        this.mVibrators = new ArrayList<>();
+        this.vibrators = new ArrayList<>();
     }
 
     public void addVibrator(VibratorMatch vibrator) {
-        if (!mVibrators.contains(vibrator)) {
-            mVibrators.add(vibrator);
+        if (!vibrators.contains(vibrator)) {
+            vibrators.add(vibrator);
         }
-        notifyDataSetChanged();
     }
 
     public VibratorMatch getVibrator(int position) {
-        return mVibrators.get(position);
+        return vibrators.get(position);
     }
 
     public void clear() {
-        mVibrators.clear();
+        vibrators.clear();
     }
 
     @Override
     public int getCount() {
-        return mVibrators.size();
+        return vibrators.size();
     }
 
     @Override
     public VibratorMatch getItem(int i) {
-        return mVibrators.get(i);
+        return vibrators.get(i);
     }
 
     @Override
@@ -59,11 +56,11 @@ public class VibratorListAdapter extends ArrayAdapter<VibratorMatch> {
     }
 
     @Override
-    public View getView(int position, View view, ViewGroup parent) {
+    public View getView(int i, View view, ViewGroup parent) {
         ViewHolder viewHolder;
-
+        // General ListView optimization code.
         if (view == null) {
-            view = LayoutInflater.from(context).inflate(R.layout.listitem_vibrator, parent);
+            view = LayoutInflater.from(context).inflate(R.layout.listitem_vibrator, null);
             viewHolder = new ViewHolder();
             viewHolder.deviceName = view.findViewById(R.id.list_device_name);
             viewHolder.lastFoundTime = view.findViewById(R.id.list_last_seen_time);
@@ -74,13 +71,17 @@ public class VibratorListAdapter extends ArrayAdapter<VibratorMatch> {
         }
 
         viewHolder.alertEnabled.setOnClickListener(v -> {
-            VibratorMatch vibrator = getVibrator(position);
-            new VibDBHelper(v.getContext()).setVibratorIgnored(vibrator, vibrator.getAlertEnabled());
-            vibrator.toggleAlertEnabled();
-            this.notifyDataSetChanged();
+
+            //careful, the value that should be set is ignored is the opposite of the alertEnabled value!
+            //additionally this value should be toggeled -> we need to set !!alertEnabled as the new
+            //vibrator ignored value
+            new VibDBHelper(context).setVibratorIgnored(getVibrator(i),
+                    getVibrator(i).getAlertEnabled());
+            getVibrator(i).toggleAlertEnabled();
+            notifyDataSetChanged();
         });
 
-        VibratorMatch vibrator = mVibrators.get(position);
+        VibratorMatch vibrator = vibrators.get(i);
         String name = vibrator.getName();
         String time = vibrator.getLastSeenTime();
 
@@ -91,11 +92,9 @@ public class VibratorListAdapter extends ArrayAdapter<VibratorMatch> {
         return view;
     }
 
-    private class ViewHolder {
+    class ViewHolder {
         TextView deviceName;
         TextView lastFoundTime;
         CheckBox alertEnabled;
     }
-
-
 }

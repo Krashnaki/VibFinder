@@ -151,6 +151,11 @@ public class BluetoothLEService extends Service {
             intent.putExtra(CHARA_BYTE_ARRAY, data);
             intent.putExtra(SERVICE_UUID, characteristic.getService().getUuid().toString());
             intent.putExtra(CHARA_UUID, characteristic.getUuid().toString());
+
+            Log.d(TAG, "broadcastUpdate: EXTRA_DATA:  " + new String(data) + "==" + stringBuilder.toString());
+            Log.d(TAG, "broadcastUpdate: SERVICE_UUID:" + characteristic.getService().getUuid().toString());
+            Log.d(TAG, "broadcastUpdate: CHARA_UUID:  " + characteristic.getUuid().toString());
+
         }
         sendBroadcast(intent);
     }

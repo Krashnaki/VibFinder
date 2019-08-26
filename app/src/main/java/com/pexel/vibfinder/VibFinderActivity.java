@@ -32,6 +32,7 @@ import com.pexel.vibfinder.services.VibFinderService;
 import com.pexel.vibfinder.services.VibFinderService.LocalVibFinderServiceBinder;
 import com.pexel.vibfinder.util.CustomExceptionHandler;
 import com.pexel.vibfinder.util.VibDBHelper;
+import com.pexel.vibfinder.util.VibratorListViewAdapter;
 
 import java.util.Objects;
 
@@ -65,8 +66,7 @@ public class VibFinderActivity extends Activity {
     Button enableBLEButton;
 
 
-
-    private VibratorListAdapter vibListViewAdapter;
+    private VibratorListViewAdapter vibListViewAdapter;
 
     private VibDBHelper vibDBHelper;
 
@@ -193,7 +193,7 @@ public class VibFinderActivity extends Activity {
                     Environment.getExternalStorageDirectory() + "/media/development/VibFinder", null));
         }
 
-        vibListViewAdapter = new VibratorListAdapter(this.getApplicationContext());
+        vibListViewAdapter = new VibratorListViewAdapter(this.getApplicationContext());
         vibList.addHeaderView(getLayoutInflater().inflate(R.layout.listheader_vibrator, vibList, false));
         vibList.setAdapter(vibListViewAdapter);
 
