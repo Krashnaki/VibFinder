@@ -35,6 +35,7 @@ import com.pexel.vibfinder.services.VibFinderService;
 import com.pexel.vibfinder.services.VibFinderService.LocalVibFinderServiceBinder;
 import com.pexel.vibfinder.util.CustomExceptionHandler;
 import com.pexel.vibfinder.util.VibDBHelper;
+import com.pexel.vibfinder.util.VibratorListViewAdapter;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -54,7 +55,7 @@ public class VibFinderActivity extends Activity {
     private TextView BLEstatusTextView;
     private Button enableBLEButton;
 
-    private VibratorListAdapter vibListViewAdapter;
+    private VibratorListViewAdapter vibListViewAdapter;
 
     private VibDBHelper vibDBHelper;
 
@@ -194,7 +195,7 @@ public class VibFinderActivity extends Activity {
         enableBLEButton = findViewById(R.id.ble_enable_button);
         enableBLEView = findViewById(R.id.layout_enable_bluetooth);
 
-        vibListViewAdapter = new VibratorListAdapter();
+        vibListViewAdapter = new VibratorListViewAdapter(this);
         vibList.addHeaderView(getLayoutInflater().inflate(R.layout.listheader_vibrator, vibList, false));
         vibList.setAdapter(vibListViewAdapter);
 
@@ -383,84 +384,6 @@ public class VibFinderActivity extends Activity {
                 vibListViewAdapter.getVibrator(position).getAlertEnabled());
         vibListViewAdapter.getVibrator(position).toggleAlertEnabled();
         vibListViewAdapter.notifyDataSetChanged();
-    }
-
-    /**
-     * Help class for the TimerListAdapter
-     */
-    static class ViewHolder {
-        TextView deviceName;
-        TextView lastFoundTime;
-        CheckBox alertEnabled;
-    }
-
-    /**
-     * Adapter for holding validated matches, thus found vibrators.
-     */
-    public class VibratorListAdapter extends BaseAdapter {
-        private ArrayList<VibratorMatch> mVibrators;
-        private LayoutInflater mInflator;
-
-        public VibratorListAdapter() {
-            super();
-            mVibrators = new ArrayList<>();
-            mInflator = VibFinderActivity.this.getLayoutInflater();
-        }
-
-        public void addVibrator(VibratorMatch vibrator) {
-            if (!mVibrators.contains(vibrator)) {
-                mVibrators.add(vibrator);
-            }
-        }
-
-        public VibratorMatch getVibrator(int position) {
-            return mVibrators.get(position);
-        }
-
-        public void clear() {
-            mVibrators.clear();
-        }
-
-        @Override
-        public int getCount() {
-            return mVibrators.size();
-        }
-
-        @Override
-        public Object getItem(int i) {
-            return mVibrators.get(i);
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
-
-        @Override
-        public View getView(int i, View view, ViewGroup parent) {
-            ViewHolder viewHolder;
-            // General ListView optimization code.
-            if (view == null) {
-                view = mInflator.inflate(R.layout.listitem_vibrator, parent);
-                viewHolder = new ViewHolder();
-                viewHolder.deviceName = view.findViewById(R.id.list_device_name);
-                viewHolder.lastFoundTime = view.findViewById(R.id.list_last_seen_time);
-                viewHolder.alertEnabled = view.findViewById(R.id.list_itemUsage);
-                view.setTag(viewHolder);
-            } else {
-                viewHolder = (ViewHolder) view.getTag();
-            }
-
-            VibratorMatch vibrator = mVibrators.get(i);
-            String name = vibrator.getName();
-            String time = vibrator.getLastSeenTime();
-
-            viewHolder.alertEnabled.setChecked(vibrator.getAlertEnabled());
-            viewHolder.deviceName.setText(name);
-            viewHolder.lastFoundTime.setText(time);
-
-            return view;
-        }
     }
 
 }
