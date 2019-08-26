@@ -299,16 +299,6 @@ public class VibFinderActivity extends Activity {
         vibFinderService = null;
     }
 
-    private void exitApplication() {
-        if (vibFinderService != null) {
-            unbindService(mServiceConnection);
-        }
-        vibFinderService = null;
-        Intent vibFinderService = new Intent(this, VibFinderService.class);
-        stopService(vibFinderService);
-        finish();
-    }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.vib_finder, menu);
@@ -355,6 +345,16 @@ public class VibFinderActivity extends Activity {
         new Handler().postDelayed(() -> doubleBackToExitPressedOnce = false, 2000);
     }
 
+    private void exitApplication() {
+        if (vibFinderService != null) {
+            unbindService(mServiceConnection);
+        }
+        vibFinderService = null;
+        Intent vibFinderService = new Intent(this, VibFinderService.class);
+        stopService(vibFinderService);
+        finish();
+    }
+
     /**
      * This function makes the line in the layout notifying the user that bluetooth is disabled
      * and giving him the chance to enable it visible.
@@ -364,95 +364,6 @@ public class VibFinderActivity extends Activity {
         enableBLEView.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.ble_disabled_color));
         BLEstatusTextView.setText(getString(R.string.bluetooth_disabled));
         enableBLEView.setVisibility(View.VISIBLE);
-    }
-
-
-
-    /**
-     * Adapter for holding validated matches, thus found vibrators.
-     */
-    public class VibratorListAdapter extends BaseAdapter {
-        private ArrayList<VibratorMatch> mVibrators;
-        private LayoutInflater inflater;
-
-        ArrayAdapter<VibratorMatch> adapter;
-
-        private class ViewHolder {
-            TextView deviceName;
-            TextView lastFoundTime;
-            CheckBox alertEnabled;
-        }
-
-        public VibratorListAdapter() {
-            super();
-            mVibrators = new ArrayList<>();
-            inflater = VibFinderActivity.this.getLayoutInflater();
-        }
-
-        public void addVibrator(VibratorMatch vibrator) {
-            if (!mVibrators.contains(vibrator)) {
-                mVibrators.add(vibrator);
-            }
-            adapter.notifyDataSetChanged();
-        }
-
-        public VibratorMatch getVibrator(int position) {
-            return mVibrators.get(position);
-        }
-
-        public void clear() {
-            mVibrators.clear();
-        }
-
-        @Override
-        public int getCount() {
-            return mVibrators.size();
-        }
-
-        @Override
-        public Object getItem(int i) {
-            return mVibrators.get(i);
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
-
-        @Override
-        public View getView(int position, View view, ViewGroup parent) {
-            ViewHolder viewHolder;
-
-            if (view == null) {
-                view = inflater.inflate(R.layout.listitem_vibrator, parent);
-                viewHolder = new ViewHolder();
-                viewHolder.deviceName = view.findViewById(R.id.list_device_name);
-                viewHolder.lastFoundTime = view.findViewById(R.id.list_last_seen_time);
-                viewHolder.alertEnabled = view.findViewById(R.id.list_itemUsage);
-                view.setTag(viewHolder);
-            } else {
-                viewHolder = (ViewHolder) view.getTag();
-            }
-
-            viewHolder.alertEnabled.setOnClickListener(view1 -> {
-                VibratorMatch vibrator = vibListViewAdapter.getVibrator(position);
-                vibDBHelper.setVibratorIgnored(vibrator, vibrator.getAlertEnabled());
-                vibrator.toggleAlertEnabled();
-                vibListViewAdapter.notifyDataSetChanged();
-            });
-
-            VibratorMatch vibrator = mVibrators.get(position);
-            String name = vibrator.getName();
-            String time = vibrator.getLastSeenTime();
-
-            viewHolder.alertEnabled.setChecked(vibrator.getAlertEnabled());
-            viewHolder.deviceName.setText(name);
-            viewHolder.lastFoundTime.setText(time);
-
-            return view;
-        }
-
-
     }
 
 }
