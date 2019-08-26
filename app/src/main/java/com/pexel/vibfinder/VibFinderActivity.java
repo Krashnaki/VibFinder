@@ -13,23 +13,19 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
-import android.support.annotation.NonNull;
-import android.support.constraint.ConstraintLayout;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.pexel.vibfinder.objects.VibratorMatch;
 import com.pexel.vibfinder.services.VibFinderService;
@@ -37,8 +33,10 @@ import com.pexel.vibfinder.services.VibFinderService.LocalVibFinderServiceBinder
 import com.pexel.vibfinder.util.CustomExceptionHandler;
 import com.pexel.vibfinder.util.VibDBHelper;
 
-import java.util.ArrayList;
 import java.util.Objects;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 public class VibFinderActivity extends Activity {
     private final static String TAG = VibFinderActivity.class.getSimpleName();
@@ -47,13 +45,26 @@ public class VibFinderActivity extends Activity {
 
     boolean doubleBackToExitPressedOnce = false;
 
-    private Button searchButton;
-    private Button stopVibrationButton;
-    private ListView vibList;
 
-    private ConstraintLayout enableBLEView;
-    private TextView BLEstatusTextView;
-    private Button enableBLEButton;
+    @BindView(R.id.startStopButton)
+    Button searchButton;
+
+    @BindView(R.id.stopVibrationButton)
+    Button stopVibrationButton;
+
+    @BindView(R.id.vibrators_list)
+    ListView vibList;
+
+    @BindView(R.id.layout_enable_bluetooth)
+    ConstraintLayout enableBLEView;
+
+    @BindView(R.id.ble_status_text_view)
+    TextView BLEstatusTextView;
+
+    @BindView(R.id.ble_enable_button)
+    Button enableBLEButton;
+
+
 
     private VibratorListAdapter vibListViewAdapter;
 
@@ -163,16 +174,17 @@ public class VibFinderActivity extends Activity {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "create");
 
+        setContentView(R.layout.activity_vib_finder);
+        ButterKnife.bind(this);
+
         /*
           Ask for Location (needed for Bluetooth)
          */
-
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.READ_CONTACTS},
                     REQUEST_ENABLE_BT);
-
         }
 
 
@@ -181,17 +193,7 @@ public class VibFinderActivity extends Activity {
                     Environment.getExternalStorageDirectory() + "/media/development/VibFinder", null));
         }
 
-        setContentView(R.layout.activity_vib_finder);
-
-
-        searchButton = findViewById(R.id.startStopButton);
-        stopVibrationButton = findViewById(R.id.stopVibrationButton);
-        vibList = findViewById(R.id.vibrators_list);
-        BLEstatusTextView = findViewById(R.id.ble_status_text_view);
-        enableBLEButton = findViewById(R.id.ble_enable_button);
-        enableBLEView = findViewById(R.id.layout_enable_bluetooth);
-
-        vibListViewAdapter = new VibratorListAdapter();
+        vibListViewAdapter = new VibratorListAdapter(this.getApplicationContext());
         vibList.addHeaderView(getLayoutInflater().inflate(R.layout.listheader_vibrator, vibList, false));
         vibList.setAdapter(vibListViewAdapter);
 

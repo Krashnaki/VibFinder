@@ -9,7 +9,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
@@ -35,21 +34,18 @@ import android.os.IBinder;
 import android.os.ParcelUuid;
 import android.os.PowerManager;
 import android.os.Vibrator;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
+import androidx.core.content.ContextCompat;
+
 import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.pexel.vibfinder.util.CustomExceptionHandler;
 import com.pexel.vibfinder.R;
+import com.pexel.vibfinder.VibFinderActivity;
+import com.pexel.vibfinder.util.CustomExceptionHandler;
 import com.pexel.vibfinder.util.ServerConnectionSingleton;
 import com.pexel.vibfinder.util.VibDBHelper;
-import com.pexel.vibfinder.VibFinderActivity;
 import com.pexel.vibfinder.util.VibGattAttributes;
-
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -410,8 +406,8 @@ public class VibFinderService extends Service {
             List<ScanFilter> scanFilters = new ArrayList<>();
             scanFilters.add(new ScanFilter.Builder()
                     .setServiceUuid(
-                        ParcelUuid.fromString("50300001-0020-4bd4-bbd5-a6920e4c5653"),
-                        ParcelUuid.fromString("10111111-1110-1111-1111-111111111111"))
+                            ParcelUuid.fromString("50300001-0020-4bd4-bbd5-a6920e4c5653"),
+                            ParcelUuid.fromString("10111111-1110-1111-1111-111111111111"))
                     .build());
             mLeScanner.startScan(scanFilters, settings, mLeScanCallback);
         } else {
@@ -496,7 +492,8 @@ public class VibFinderService extends Service {
                     mHandler.postDelayed(() -> {
                         try {
                             locationManager.removeUpdates(locationListener);
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
 
                         mIsGettingLocation = false;
                         //sendToServer();
@@ -525,21 +522,21 @@ public class VibFinderService extends Service {
                             + "&position=" + (mCurrentLocation != null ? Location.convert(mCurrentLocation.getLatitude(), Location.FORMAT_DEGREES) : 0)
                             + "-" + (mCurrentLocation != null ? Location.convert(mCurrentLocation.getLongitude(), Location.FORMAT_DEGREES) : 0),
                             null, response -> {
-                                Log.d("SIGNUP", response.toString());
+                        Log.d("SIGNUP", response.toString());
 
-                                if (response.has("success")) {
-                                    Log.d(TAG, "sending to server successfull");
+                        if (response.has("success")) {
+                            Log.d(TAG, "sending to server successfull");
 
 
-                                } else {
-                                    Log.d(TAG, "sending to server failes");
+                        } else {
+                            Log.d(TAG, "sending to server failes");
 
-                                }
-                            }, error -> {
-                                Log.d(TAG, "sending to server VolleyError" + error + "\n" + error.getMessage());
-                                error.printStackTrace();
+                        }
+                    }, error -> {
+                        Log.d(TAG, "sending to server VolleyError" + error + "\n" + error.getMessage());
+                        error.printStackTrace();
 
-                            });
+                    });
 
             // Access the RequestQueue through your singleton class.
             ServerConnectionSingleton.getInstance(this).addToRequestQueue(jsObjRequest);
@@ -630,7 +627,7 @@ public class VibFinderService extends Service {
 
         mSearchEnabled = true;
         mAlarm.setAlarm(this);
-        scanLeDevice(true);;
+        scanLeDevice(true);
 
         //remember that there is no alarm running in case that the OS kills the service and starts it again
 
