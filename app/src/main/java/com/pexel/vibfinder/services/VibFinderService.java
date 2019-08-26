@@ -403,13 +403,7 @@ public class VibFinderService extends Service {
             for (String s : requiredAdvServices) {
                 filterList.add(new ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString(s)).build());
             }
-            List<ScanFilter> scanFilters = new ArrayList<>();
-            scanFilters.add(new ScanFilter.Builder()
-                    .setServiceUuid(
-                            ParcelUuid.fromString("50300001-0020-4bd4-bbd5-a6920e4c5653"),
-                            ParcelUuid.fromString("10111111-1110-1111-1111-111111111111"))
-                    .build());
-            mLeScanner.startScan(scanFilters, settings, mLeScanCallback);
+            mLeScanner.startScan(filterList, settings, mLeScanCallback);
         } else {
             mScanning = false;
             mLeScanner.stopScan(mLeScanCallback);
