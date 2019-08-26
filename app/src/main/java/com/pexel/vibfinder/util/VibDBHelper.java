@@ -12,16 +12,16 @@ import com.pexel.vibfinder.objects.VibratorMatch;
 
 
 public class VibDBHelper extends SQLiteOpenHelper {
-    public static final String DATABASE_NAME = "Vibrators.db";
-    public static final String VIBRATORS_TABLE_NAME = "vibrators";
-    public static final String VIBRATORS_COLUMN_NAME = "name";
-    public static final String VIBRATORS_COLUMN_ADDRESS = "address";
-    public static final String VIBRATORS_COLUMN_STATE = "state";
-    public static final String VIBRATORS_COLUMN_IGNORED = "ignored";
-    public static final String VIBRATORS_COLUMN_LAST_ALARM_TIME = "lastAlarmTime";
-    public static final String VIBRATORS_COLUMN_LAST_SEEN_TIME = "lastSeenTime";
-    public static final int VALIDATED_STATE = 1;
-    public static final int DISCARDED_STATE = 2;
+    private static final String DATABASE_NAME = "Vibrators.db";
+    private static final String VIBRATORS_TABLE_NAME = "vibrators";
+    private static final String VIBRATORS_COLUMN_NAME = "name";
+    private static final String VIBRATORS_COLUMN_ADDRESS = "address";
+    private static final String VIBRATORS_COLUMN_STATE = "state";
+    private static final String VIBRATORS_COLUMN_IGNORED = "ignored";
+    private static final String VIBRATORS_COLUMN_LAST_ALARM_TIME = "lastAlarmTime";
+    private static final String VIBRATORS_COLUMN_LAST_SEEN_TIME = "lastSeenTime";
+    private static final int VALIDATED_STATE = 1;
+    private static final int DISCARDED_STATE = 2;
     private final static String TAG = VibDBHelper.class.getSimpleName();
     private static final int TRUE_INT = 1;
     private static final int FALSE_INT = 0;
@@ -57,16 +57,14 @@ public class VibDBHelper extends SQLiteOpenHelper {
      * to discarded.
      *
      * @param device The device that should be added as discardedMatch to the DB
-     * @return true
      */
-    public boolean addDiscardedMatch(BluetoothDevice device) {
+    public void addDiscardedMatch(BluetoothDevice device) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(VIBRATORS_COLUMN_NAME, device.getName());
         contentValues.put(VIBRATORS_COLUMN_ADDRESS, device.getAddress());
         contentValues.put(VIBRATORS_COLUMN_STATE, DISCARDED_STATE);
         db.insert(VIBRATORS_TABLE_NAME, null, contentValues);
-        return true;
     }
 
     /**
@@ -74,16 +72,14 @@ public class VibDBHelper extends SQLiteOpenHelper {
      * to validated.
      *
      * @param device The device that should be added as validatedMatch to the DB
-     * @return true
      */
-    public boolean addValidatedMatch(BluetoothDevice device) {
+    public void addValidatedMatch(BluetoothDevice device) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(VIBRATORS_COLUMN_NAME, device.getName());
         contentValues.put(VIBRATORS_COLUMN_ADDRESS, device.getAddress());
         contentValues.put(VIBRATORS_COLUMN_STATE, VALIDATED_STATE);
         db.insert(VIBRATORS_TABLE_NAME, null, contentValues);
-        return true;
     }
 
     /**
@@ -146,46 +142,50 @@ public class VibDBHelper extends SQLiteOpenHelper {
         }
         Log.d(TAG, "Vibrator ignored: " + res.getInt(res.getColumnIndex(VIBRATORS_COLUMN_IGNORED)));
         if (res.getInt(res.getColumnIndex(VIBRATORS_COLUMN_IGNORED)) == FALSE_INT) {
+            res.close();
             return false;
         }
 
+        res.close();
         return true;
+    }
+
+    /**
+     * @see VibDBHelper#setVibratorIgnored(String, String, boolean)
+     *
+     * @param device     the {@link VibratorMatch} whose ignored parameter should be set.
+     * @param ignored true if the device should be ignored, false if not.
+     */
+    public void setVibratorIgnored(BluetoothDevice device, boolean ignored) {
+        setVibratorIgnored(device.getName(), device.getAddress(), ignored);
+    }
+
+    /**
+     * @see VibDBHelper#setVibratorIgnored(String, String, boolean)
+     *
+     * @param vib     the {@link VibratorMatch} whose ignored parameter should be set.
+     * @param ignored true if the device should be ignored, false if not.
+     */
+    public void setVibratorIgnored(VibratorMatch vib, boolean ignored) {
+        setVibratorIgnored(vib.getName(), vib.getAddress(), ignored);
     }
 
     /**
      * Sets a specified device to ignored or not, that means if it should trigger an alert if it is
      * found or not.
      *
-     * @param device  the device whose ignored parameter should be set.
-     * @param ignored true if the device should be ignored, fals if not.
-     * @return true;
+     * @param name    name of the device
+     * @param address address of the device
+     * @param ignored true if the device should be ignored, false if not.
      */
-    public boolean setVibratorIgnored(BluetoothDevice device, boolean ignored) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(VIBRATORS_COLUMN_IGNORED, ignored ? TRUE_INT : FALSE_INT);
-        String where = VIBRATORS_COLUMN_NAME + "='" + device.getName() + "'"
-                + " AND " + VIBRATORS_COLUMN_ADDRESS + "='" + device.getAddress() + "'";
-        db.update(VIBRATORS_TABLE_NAME, contentValues, where, null);
-        return true;
-    }
 
-    /**
-     * Sets a specified device to ignored or not, that means if it should trigger an alert if it is
-     * found or not.
-     *
-     * @param vib     the VibratorMatch whose ignored parameter should be set.
-     * @param ignored true if the device should be ignored, fals if not.
-     * @return true;
-     */
-    public boolean setVibratorIgnored(VibratorMatch vib, boolean ignored) {
+    private void setVibratorIgnored(String name, String address, boolean ignored) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(VIBRATORS_COLUMN_IGNORED, ignored ? TRUE_INT : FALSE_INT);
-        String where = VIBRATORS_COLUMN_NAME + "='" + vib.getName() + "'"
-                + " AND " + VIBRATORS_COLUMN_ADDRESS + "='" + vib.getAddress() + "'";
+        String where = VIBRATORS_COLUMN_NAME + "='" + name + "'"
+                + " AND " + VIBRATORS_COLUMN_ADDRESS + "='" + address + "'";
         db.update(VIBRATORS_TABLE_NAME, contentValues, where, null);
-        return true;
     }
 
     /**
@@ -215,16 +215,14 @@ public class VibDBHelper extends SQLiteOpenHelper {
      *
      * @param device The device whose lastAlertTime should be modified.
      * @param time   The time to which the device's lastAlertTime should be set.
-     * @return true
      */
-    public boolean setLastAlertTime(BluetoothDevice device, long time) {
+    public void setLastAlertTime(BluetoothDevice device, long time) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(VIBRATORS_COLUMN_LAST_ALARM_TIME, time);
         String where = VIBRATORS_COLUMN_NAME + "='" + device.getName() + "'"
                 + " AND " + VIBRATORS_COLUMN_ADDRESS + "='" + device.getAddress() + "'";
         db.update(VIBRATORS_TABLE_NAME, contentValues, where, null);
-        return true;
     }
 
     /**
@@ -256,14 +254,13 @@ public class VibDBHelper extends SQLiteOpenHelper {
      * @param time   The time that should be set as the specified device's lastSeenTime in ms after
      *               the start of the epoch. 0 if the device as never been seen yet.
      */
-    public boolean setLastSeenTime(BluetoothDevice device, long time) {
+    public void setLastSeenTime(BluetoothDevice device, long time) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(VIBRATORS_COLUMN_LAST_SEEN_TIME, time);
         String where = VIBRATORS_COLUMN_NAME + "='" + device.getName() + "'"
                 + " AND " + VIBRATORS_COLUMN_ADDRESS + "='" + device.getAddress() + "'";
         db.update(VIBRATORS_TABLE_NAME, contentValues, where, null);
-        return true;
     }
 
     /**
@@ -280,8 +277,9 @@ public class VibDBHelper extends SQLiteOpenHelper {
                 + " " + VIBRATORS_COLUMN_STATE + "=" + VALIDATED_STATE
                 + " ORDER BY " + VIBRATORS_COLUMN_LAST_SEEN_TIME + " DESC";
         Cursor c = db.rawQuery(query, null);
+
         if (c.getCount() > 0) {
-            VibratorMatch vibrators[] = new VibratorMatch[c.getCount()];
+            VibratorMatch[] vibrators = new VibratorMatch[c.getCount()];
             c.moveToFirst();
 
             for (int i = 0; i < c.getCount(); i++) {
@@ -294,8 +292,12 @@ public class VibDBHelper extends SQLiteOpenHelper {
                 vibrators[i] = vib;
                 c.moveToNext();
             }
+
+            c.close();
             return vibrators;
         } else {
+
+            c.close();
             return new VibratorMatch[0];
         }
     }

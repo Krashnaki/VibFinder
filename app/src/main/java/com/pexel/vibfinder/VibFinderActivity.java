@@ -23,6 +23,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -157,9 +158,6 @@ public class VibFinderActivity extends Activity {
         return intentFilter;
     }
 
-    private void clearUI() {
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -169,7 +167,6 @@ public class VibFinderActivity extends Activity {
           Ask for Location (needed for Bluetooth)
          */
 
-        int i = 0;
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -296,7 +293,6 @@ public class VibFinderActivity extends Activity {
         super.onDestroy();
         Log.d(TAG, "destroy");
         invalidateOptionsMenu();
-        clearUI();
         if (vibFinderService != null) {
             unbindService(mServiceConnection);
         }
@@ -370,47 +366,34 @@ public class VibFinderActivity extends Activity {
         enableBLEView.setVisibility(View.VISIBLE);
     }
 
-    /**
-     * Handler for clicks on the alert enabled checkbox in the vibratorsList.
-     * Will update the list and the database
-     */
-    public void vibratorAlertEnabledClickHandler(View v) {
-        int position = vibList.getPositionForView(v);
-        //careful, the value that should be set is ignored is the opposite of the alertEnabled value!
-        //additionally this value should be toggeled -> we need to set !!alertEnabled as the new
-        //vibrator ignored value
-        vibDBHelper.setVibratorIgnored(vibListViewAdapter.getVibrator(position),
-                vibListViewAdapter.getVibrator(position).getAlertEnabled());
-        vibListViewAdapter.getVibrator(position).toggleAlertEnabled();
-        vibListViewAdapter.notifyDataSetChanged();
-    }
 
-    /**
-     * Help class for the TimerListAdapter
-     */
-    static class ViewHolder {
-        TextView deviceName;
-        TextView lastFoundTime;
-        CheckBox alertEnabled;
-    }
 
     /**
      * Adapter for holding validated matches, thus found vibrators.
      */
     public class VibratorListAdapter extends BaseAdapter {
         private ArrayList<VibratorMatch> mVibrators;
-        private LayoutInflater mInflator;
+        private LayoutInflater inflater;
+
+        ArrayAdapter<VibratorMatch> adapter;
+
+        private class ViewHolder {
+            TextView deviceName;
+            TextView lastFoundTime;
+            CheckBox alertEnabled;
+        }
 
         public VibratorListAdapter() {
             super();
             mVibrators = new ArrayList<>();
-            mInflator = VibFinderActivity.this.getLayoutInflater();
+            inflater = VibFinderActivity.this.getLayoutInflater();
         }
 
         public void addVibrator(VibratorMatch vibrator) {
             if (!mVibrators.contains(vibrator)) {
                 mVibrators.add(vibrator);
             }
+            adapter.notifyDataSetChanged();
         }
 
         public VibratorMatch getVibrator(int position) {
@@ -437,11 +420,11 @@ public class VibFinderActivity extends Activity {
         }
 
         @Override
-        public View getView(int i, View view, ViewGroup parent) {
+        public View getView(int position, View view, ViewGroup parent) {
             ViewHolder viewHolder;
-            // General ListView optimization code.
+
             if (view == null) {
-                view = mInflator.inflate(R.layout.listitem_vibrator, parent);
+                view = inflater.inflate(R.layout.listitem_vibrator, parent);
                 viewHolder = new ViewHolder();
                 viewHolder.deviceName = view.findViewById(R.id.list_device_name);
                 viewHolder.lastFoundTime = view.findViewById(R.id.list_last_seen_time);
@@ -451,7 +434,14 @@ public class VibFinderActivity extends Activity {
                 viewHolder = (ViewHolder) view.getTag();
             }
 
-            VibratorMatch vibrator = mVibrators.get(i);
+            viewHolder.alertEnabled.setOnClickListener(view1 -> {
+                VibratorMatch vibrator = vibListViewAdapter.getVibrator(position);
+                vibDBHelper.setVibratorIgnored(vibrator, vibrator.getAlertEnabled());
+                vibrator.toggleAlertEnabled();
+                vibListViewAdapter.notifyDataSetChanged();
+            });
+
+            VibratorMatch vibrator = mVibrators.get(position);
             String name = vibrator.getName();
             String time = vibrator.getLastSeenTime();
 
@@ -461,6 +451,8 @@ public class VibFinderActivity extends Activity {
 
             return view;
         }
+
+
     }
 
 }

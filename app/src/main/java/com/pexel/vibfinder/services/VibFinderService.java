@@ -630,7 +630,7 @@ public class VibFinderService extends Service {
 
         mSearchEnabled = true;
         mAlarm.setAlarm(this);
-        startScanning();
+        scanLeDevice(true);;
 
         //remember that there is no alarm running in case that the OS kills the service and starts it again
 

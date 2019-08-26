@@ -46,7 +46,6 @@
         android:layout_height="0dp"
         android:checked="true"
         android:gravity="center_vertical"
-        android:onClick="vibratorAlertEnabledClickHandler"
         android:text=""
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
