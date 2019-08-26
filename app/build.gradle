@@ -3,23 +3,62 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
+
+
+
+    def versionPropsFile = file('version.properties')
+    def versionBuild
+    if (versionPropsFile.canRead()) {
+        Properties versionProps = new Properties()
+        versionProps.load(new FileInputStream(versionPropsFile))
+        versionBuild = versionProps['BUILDVERSION'].toInteger()
+    } else {
+        throw new Exception("Could not read version.properties!")
+    }
+
+    ext.autoIncrementBuildNumber = {
+
+        if (versionPropsFile.canRead()) {
+            Properties versionProps = new Properties()
+            versionProps.load(new FileInputStream(versionPropsFile))
+            versionBuild = versionProps['BUILDVERSION'].toInteger() + 1
+            versionProps['BUILDVERSION'] = versionBuild.toString()
+            versionProps.store(versionPropsFile.newWriter(), null)
+        } else {
+            throw new Exception("Could not read version.properties!")
+        }
+    }
+
+
     defaultConfig {
         applicationId "com.pexel.vibfinder"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 1
+        versionCode versionBuild
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         sourceCompatibility = 1.8
         targetCompatibility = 1.8
+    }
+
+    gradle.taskGraph.whenReady { taskGraph ->
+        if (taskGraph.hasTask(assembleDebug)) {  /* when run debug task */
+            println("Increasing Build number")
+            autoIncrementBuildNumber()
+        } else if (taskGraph.hasTask(assembleRelease)) { /* when run release task */
+            println("Increasing Build number")
+            autoIncrementBuildNumber()
+        }
     }
 }
 
