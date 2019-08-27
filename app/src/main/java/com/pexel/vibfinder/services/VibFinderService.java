@@ -34,12 +34,9 @@ import android.os.PowerManager;
 import android.os.Vibrator;
 import android.util.Log;
 
-import com.android.volley.Request;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.pexel.vibfinder.R;
 import com.pexel.vibfinder.VibFinderActivity;
 import com.pexel.vibfinder.util.CustomExceptionHandler;
-import com.pexel.vibfinder.util.ServerConnectionSingleton;
 import com.pexel.vibfinder.util.VibDBHelper;
 import com.pexel.vibfinder.util.VibGattAttributes;
 
@@ -48,7 +45,6 @@ import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.UUID;
 
 import static android.bluetooth.le.ScanSettings.CALLBACK_TYPE_ALL_MATCHES;
 import static android.bluetooth.le.ScanSettings.CALLBACK_TYPE_FIRST_MATCH;
@@ -92,7 +88,7 @@ public class VibFinderService extends Service {
     /**
      * interval in ms in which the alarm will be triggered
      */
-    private final static int ALARM_INTERVAL = 60 * 1000;
+    private final static int ALARM_INTERVAL = 30 * 1000;
 
     /**
      * time in ms that has to pass so that an already sent match will be sent to the server again
@@ -122,7 +118,7 @@ public class VibFinderService extends Service {
     private Vibrator mVibrator; //device vibrator used to make the phone vibrate
     private boolean mAlertActive = false; //is the phone currently vibrating
     private boolean mSearchEnabled = false; //is the search active = is the cron job active
-    private Alarm mAlarm = new Alarm(); //used to create a cron job like task
+    private AlarmBroadcastReceiver alarmBroadcastReceiver = new AlarmBroadcastReceiver(); //used to create a cron job like task
 
     //stuff related to the check if it is a vibrator or not
     private BluetoothGattService mAmorVibService;
@@ -305,12 +301,12 @@ public class VibFinderService extends Service {
      */
     private ScanCallback mLeScanCallback =
             new android.bluetooth.le.ScanCallback() {
-
                 @Override
                 public void onScanResult(int callbackType, final ScanResult result) {
                     Log.d(TAG, "onScanResult");
 
                     if (callbackType == CALLBACK_TYPE_ALL_MATCHES || callbackType == CALLBACK_TYPE_FIRST_MATCH) {
+                        Log.d(TAG, "onScanResult: handling scan match");
                         handleFoundScanMatch(result.getDevice());
                     } else if (callbackType == CALLBACK_TYPE_MATCH_LOST) {
                         mScanMatches.remove(result.getDevice());
@@ -338,11 +334,11 @@ public class VibFinderService extends Service {
      * @return True if all necessary services and characteristics are available, false otherwise
      */
     //FIXME
-    private boolean checkServices(List<BluetoothGattService> services) {
+    /*private boolean checkServices(List<BluetoothGattService> services) {
 
         return true;
 
-        /*
+
         String uuid;
         boolean matchingManufacturer = false;
         boolean matchingControlService = false;
@@ -361,8 +357,8 @@ public class VibFinderService extends Service {
             }
         }
         return matchingManufacturer && matchingControlService;
-        */
-    }
+
+    }*/
 
 
     /**
@@ -374,7 +370,7 @@ public class VibFinderService extends Service {
      *
      * @param intent The intent that has been received by the broadcastReceiver and that has been identified as a dataReception.
      */
-    private void handleDataReception(Intent intent) {
+    /*private void handleDataReception(Intent intent) {
         Log.d(TAG, "handleDataReception");
         //characteristic UUID of the characteristic written to
         String cUuid = intent.getStringExtra(BluetoothLEService.CHARA_UUID);
@@ -393,7 +389,7 @@ public class VibFinderService extends Service {
                 finishDeepCheck();
             }
         }
-    }
+    }*/
 
     /**
      * This function starts/stops scanning LE Devices around the Phone for possible vibrators
@@ -401,19 +397,20 @@ public class VibFinderService extends Service {
      * @param enable true: start scanning; false: stop scanning
      */
     private void scanLeDevice(final boolean enable) {
-
-        Log.d("scanLEDevice", "started");
+        Log.d(TAG, "scanLeDevice: " + (enable ? "Start scan" : "Stop scan"));
 
         if (mLeScanner == null || bluetoothLEService == null || !bluetoothLEService.getBluetoothEnabled()) {
+            Log.d(TAG, "scanLeDevice: Scan aborted");
             return;
         }
 
         if (enable) {
             // Stops scanning after a pre-defined scan period.
-            /*mHandler.postDelayed(() -> {
+            mHandler.postDelayed(() -> {
+                Log.d(TAG, "scanLeDevice: Scan finished");
                 mScanning = false;
                 mLeScanner.stopScan(mLeScanCallback);
-            }, SCAN_PERIOD);*/
+            }, SCAN_PERIOD);
 
             mScanning = true;
 
@@ -468,7 +465,6 @@ public class VibFinderService extends Service {
 
         if (!mVibDB.getDiscardedMatchesContains(device) &&
                 !mVibDB.getValidatedMatchesContains(device) && !mScanMatches.contains(device)) {
-            Log.e(TAG, "handleFoundScanMatch: Here I am!");
             mScanMatches.add(device);
             //resetForNewDeepTest();
             //deepCheckMatches();
@@ -508,6 +504,7 @@ public class VibFinderService extends Service {
      * @param device the validated match that has been found
      */
     private void handleFoundValidatedMatch(BluetoothDevice device) {
+        Log.d(TAG, "handleFoundValidatedMatch: " + (device.getName() == null ? "unknown" : device.getName()));
         GregorianCalendar currentTime = new GregorianCalendar();
         long lastAlertedTime = mVibDB.getLastAlertTime(device);
         if (currentTime.getTimeInMillis() >= MIN_ALERT_INTERVAL + lastAlertedTime &&
@@ -547,14 +544,12 @@ public class VibFinderService extends Service {
             }
         }*/
 
-        Log.d(TAG, "handleFoundValidatedMatch: 4");
         mVibDB.setLastSeenTime(device, currentTime.getTimeInMillis());
         broadcastUpdate(ACTION_VIBRATOR_DATA_CHANGED);
-        Log.d(TAG, "handleFoundValidatedMatch: 5");
     }
 
 
-    private void sendToServer() {
+    /*private void sendToServer() {
         Log.d(TAG, "sending to server");
         for (BluetoothDevice d : mFoundVibrators) {
             Log.d(TAG, "https://vibpost.000webhostapp.com/post.php?address=" + d.getAddress()
@@ -590,7 +585,7 @@ public class VibFinderService extends Service {
         }
         mFoundVibrators.clear();
 
-    }
+    }*/
 
 
     /**
@@ -625,7 +620,7 @@ public class VibFinderService extends Service {
      * validated or discarded, depending on the result of the check. After that, it will disconnect
      * from the device to make the phone ready to check the next found scanMatch.
      */
-    private void finishDeepCheck() {
+    /*private void finishDeepCheck() {
         boolean success = true;
         if (mManufacturerNameChara == null || mAmorVibService == null) {
             success = false;
@@ -647,7 +642,7 @@ public class VibFinderService extends Service {
         }
         //get ready for a new check
         bluetoothLEService.disconnect();
-    }
+    }*/
 
 
     /**
@@ -662,7 +657,7 @@ public class VibFinderService extends Service {
 
     /**
      * This function starts the regular search for vibrators. It will start the Android equivalent
-     * to a cron job, an Alarm
+     * to a cron job, an AlarmBroadcastReceiver
      */
     @SuppressLint("ApplySharedPref")
     public void startSearch() {
@@ -672,7 +667,7 @@ public class VibFinderService extends Service {
         }
 
         mSearchEnabled = true;
-        mAlarm.setAlarm(this);
+        alarmBroadcastReceiver.setAlarm(this);
         scanLeDevice(true);
 
         //remember that there is no alarm running in case that the OS kills the service and starts it again
@@ -686,7 +681,7 @@ public class VibFinderService extends Service {
 
     /**
      * This function stops the regular search for vibrators. It will stop the Android equivalent to
-     * a cron job, an Alarm.
+     * a cron job, an AlarmBroadcastReceiver.
      */
     @SuppressLint("ApplySharedPref")
     public void stopSearch() {
@@ -695,7 +690,7 @@ public class VibFinderService extends Service {
             return;
         }
         mSearchEnabled = false;
-        mAlarm.cancelAlarm(this);
+        alarmBroadcastReceiver.cancelAlarm(this);
         mLeScanner.stopScan(mLeScanCallback);
         //remember that there is no alarm running in case that the OS kills the service and starts it again
         SharedPreferences sharedPref = getSharedPreferences(getString(R.string.preferences_vib_finder_service), Context.MODE_PRIVATE);
@@ -724,7 +719,7 @@ public class VibFinderService extends Service {
     }
 
 
-    private void readDeviceName() {
+    /*private void readDeviceName() {
         if (bluetoothLEService != null && bluetoothLEService.getBluetoothEnabled()) {
             bluetoothLEService.readCharacteristic(
                     new BluetoothGattCharacteristic(
@@ -733,7 +728,7 @@ public class VibFinderService extends Service {
                             BluetoothGattCharacteristic.PERMISSION_READ));
             Log.d(TAG, "reading device name");
         }
-    }
+    }*/
 
     /**
      * This function stops the Alert that can be started when a vibrator has been found.
@@ -781,7 +776,7 @@ public class VibFinderService extends Service {
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "in VibFinderService: onCreate");
+        Log.d(TAG, "onCreate");
 
         if (!(Thread.getDefaultUncaughtExceptionHandler() instanceof CustomExceptionHandler)) {
             Thread.setDefaultUncaughtExceptionHandler(new CustomExceptionHandler(
@@ -854,12 +849,14 @@ public class VibFinderService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
+        Log.d(TAG, "onBind");
         return this.mBinder;
     }
 
 
     @Override
     public boolean onUnbind(Intent intent) {
+        Log.d(TAG, "onUnbind");
         return super.onUnbind(intent);
     }
 
@@ -887,13 +884,13 @@ public class VibFinderService extends Service {
      * This class is used to create a cron like job for the search for vibrators.
      * It needs to be static because it is registered in the manifest as a receiver.
      */
-    public static class Alarm extends BroadcastReceiver {
+    public static class AlarmBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "AlarmBroadcastReceiver#onReceive: ");
             PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
             PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "vibfinder:alarmwakelock");
             wl.acquire();
-            Log.d(TAG, "in Alarm");
 
             //actual action to be performed in the alarm
             if (mSelfService != null) {
@@ -904,19 +901,21 @@ public class VibFinderService extends Service {
         }
 
         public void setAlarm(Context context) {
+            Log.d(TAG, "AlarmBroadcastReceiver#setAlarm");
             AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-            Intent intent = new Intent(context, Alarm.class);
+            Intent intent = new Intent(context, AlarmBroadcastReceiver.class);
             PendingIntent alarmIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
             am.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), ALARM_INTERVAL, alarmIntent);
-            Log.d(TAG, "Alarm set");
+            Log.d(TAG, "AlarmBroadcastReceiver set");
         }
 
         public void cancelAlarm(Context context) {
-            Intent intent = new Intent(context, Alarm.class);
+            Log.d(TAG, "AlarmBroadcastReceiver#cancelAlarm");
+            Intent intent = new Intent(context, AlarmBroadcastReceiver.class);
             PendingIntent alarmIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
             AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
             am.cancel(alarmIntent);
-            Log.d(TAG, "Alarm canceled");
+            Log.d(TAG, "AlarmBroadcastReceiver canceled");
         }
     }
 

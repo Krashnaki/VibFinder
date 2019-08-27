@@ -31,6 +31,7 @@ import com.pexel.vibfinder.objects.VibratorMatch;
 import com.pexel.vibfinder.services.VibFinderService;
 import com.pexel.vibfinder.services.VibFinderService.LocalVibFinderServiceBinder;
 import com.pexel.vibfinder.util.CustomExceptionHandler;
+import com.pexel.vibfinder.util.DialogBuilder;
 import com.pexel.vibfinder.util.VibDBHelper;
 import com.pexel.vibfinder.util.VibratorListViewAdapter;
 
@@ -72,33 +73,39 @@ public class VibFinderActivity extends Activity {
 
     private VibFinderService vibFinderService;
 
+    boolean alreadyDismissd = false;
+
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
-            Log.d(TAG, "service connected to VibControlActivity");
             vibFinderService = ((LocalVibFinderServiceBinder) service).getService();
             if (!vibFinderService.getBluetoothEnabled()) {
                 showBluetoothDisabledView();
             }
 
             if (vibFinderService.getAlertActive()) {
+                Log.d(TAG, "onServiceConnected: Alert active");
                 stopVibrationButton.setVisibility(View.VISIBLE);
             } else {
+                Log.d(TAG, "onServiceConnected: Alert inactive");
                 stopVibrationButton.setVisibility(View.GONE);
             }
 
             if (vibFinderService.getSearchStarted()) {
+                Log.d(TAG, "onServiceConnected: Search running");
                 searchButton.setText(getString(R.string.stopSearch));
             } else {
+                Log.d(TAG, "onServiceConnected: Search stopped");
                 searchButton.setText(getString(R.string.startSearch));
             }
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
+            Log.d(TAG, "onServiceDisconnected");
             vibFinderService = null;
         }
     };
@@ -107,6 +114,7 @@ public class VibFinderActivity extends Activity {
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "onReceive");
 
             final String action = intent.getAction();
 
@@ -172,7 +180,7 @@ public class VibFinderActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG, "create");
+        Log.d(TAG, "onCreate");
 
         setContentView(R.layout.activity_vib_finder);
         ButterKnife.bind(this);
@@ -180,22 +188,29 @@ public class VibFinderActivity extends Activity {
         /*
           Ask for Location (needed for Bluetooth)
          */
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.READ_CONTACTS},
+            Log.d(TAG, "onCreate: Ask for permission");
+            ActivityCompat.requestPermissions(VibFinderActivity.this,
+                    new String[]{
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION},
                     REQUEST_ENABLE_BT);
         }
+        Log.d(TAG, "onCreate: Asked for permission");
 
 
         if (!(Thread.getDefaultUncaughtExceptionHandler() instanceof CustomExceptionHandler)) {
             Thread.setDefaultUncaughtExceptionHandler(new CustomExceptionHandler(
                     Environment.getExternalStorageDirectory() + "/media/development/VibFinder", null));
         }
+        Log.d(TAG, "onCreate: Set custom exception handler");
 
         vibListViewAdapter = new VibratorListViewAdapter(this.getApplicationContext());
         vibList.addHeaderView(getLayoutInflater().inflate(R.layout.listheader_vibrator, vibList, false));
         vibList.setAdapter(vibListViewAdapter);
+        Log.d(TAG, "onCreate: Set up list");
+
 
         searchButton.setOnClickListener(v -> {
             if (vibFinderService != null) {
@@ -208,12 +223,16 @@ public class VibFinderActivity extends Activity {
                 }
             }
         });
+        Log.d(TAG, "onCreate: Set seach button click listener");
+
 
         stopVibrationButton.setOnClickListener(v -> {
             if (vibFinderService != null) {
                 vibFinderService.stopAlert();
             }
         });
+        Log.d(TAG, "onCreate: Set alert button click listener");
+
 
         enableBLEButton.setOnClickListener(v -> {
             if (vibFinderService != null) {
@@ -225,24 +244,42 @@ public class VibFinderActivity extends Activity {
                 BLEstatusTextView.setText(getString(R.string.enabling_bluetooth));
             }
         });
+        Log.d(TAG, "onCreate: Set enable bluetooth button click listener");
+
 
         vibDBHelper = new VibDBHelper(this);
+        Log.d(TAG, "onCreate: Instantiated database helper");
 
         Intent vibFinderService = new Intent(this, VibFinderService.class);
         startService(vibFinderService);
         bindService(vibFinderService, mServiceConnection, BIND_AUTO_CREATE);
+        Log.d(TAG, "onCreate: Bound to service");
 
         Objects.requireNonNull(getActionBar()).setTitle(getString(R.string.title_activity_vib_finder));
         getActionBar().setDisplayHomeAsUpEnabled(false);
-
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        Log.d(TAG, "onRequestPermissionsResult: " + requestCode);
         if (requestCode == REQUEST_ENABLE_BT) {
             if (grantResults.length <= 0
-                    || grantResults[0] != PackageManager.PERMISSION_GRANTED)
-                finish();
+                    || grantResults[0] != PackageManager.PERMISSION_GRANTED && !alreadyDismissd) {
+
+                alreadyDismissd = true;
+
+                DialogBuilder.start(this)
+                        .content(getString(R.string.location_permission_explanation))
+                        .positive("OK", v ->
+                                ActivityCompat.requestPermissions(VibFinderActivity.this,
+                                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                        REQUEST_ENABLE_BT))
+                        .cancelable()
+                        .onCancel(v -> finish())
+                        .build().show();
+            } else {
+                //finish();
+            }
         }
     }
 
@@ -250,13 +287,12 @@ public class VibFinderActivity extends Activity {
     protected void onResume() {
         super.onResume();
 
-        Log.d(TAG, "resume");
+        Log.d(TAG, "onResume");
 
-        if (vibFinderService != null && !vibFinderService.getBluetoothEnabled()) {
+        if (vibFinderService != null && !vibFinderService.getBluetoothEnabled())
             showBluetoothDisabledView();
-        } else {
+        else
             enableBLEView.setVisibility(View.GONE);
-        }
 
         //Enable bluetooth if disabled and stop vibration.
         if (vibFinderService != null) {
@@ -275,6 +311,7 @@ public class VibFinderActivity extends Activity {
 
         vibListViewAdapter.clear();
         VibratorMatch[] foundVibrators = vibDBHelper.getAllValidatedMatches();
+
         for (VibratorMatch vib : foundVibrators) {
             vibListViewAdapter.addVibrator(vib);
         }
@@ -286,14 +323,14 @@ public class VibFinderActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        Log.d(TAG, "pause");
+        Log.d(TAG, "onPause");
         unregisterReceiver(mGattUpdateReceiver);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "destroy");
+        Log.d(TAG, "onDestroy");
         invalidateOptionsMenu();
         if (vibFinderService != null) {
             unbindService(mServiceConnection);

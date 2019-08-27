@@ -1,6 +1,7 @@
 package com.pexel.vibfinder.util;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,11 +18,16 @@ import java.util.ArrayList;
 
 public class VibratorListViewAdapter extends ArrayAdapter<VibratorMatch> {
 
+    public static final String TAG = VibratorListViewAdapter.class.getSimpleName();
+
     private Context context;
     private ArrayList<VibratorMatch> vibrators;
 
     public VibratorListViewAdapter(@NonNull Context context) {
         super(context, R.layout.listitem_vibrator);
+
+        Log.d(TAG, "Constructor");
+
         this.context = context;
         this.vibrators = new ArrayList<>();
     }
@@ -57,6 +63,7 @@ public class VibratorListViewAdapter extends ArrayAdapter<VibratorMatch> {
 
     @Override
     public View getView(int i, View view, ViewGroup parent) {
+        Log.d(TAG, "getView: " + i);
         ViewHolder viewHolder;
         // General ListView optimization code.
         if (view == null) {
