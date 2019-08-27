@@ -14,4 +14,5 @@
     <string name="device_name">Name</string>
     <string name="last_seen">Zuletzt gesehen</string>
     <string name="location_permission_explanation">Bitte erlaube uns auf deinen Standort zuzugreifen. Leider ist dies notwending um nach Bluetoothgeräten zu suchen.\nOhne deine ausdrückliche Zustimmung werden wir weder auf deinen genauen Standort zugreifen, noch diesen übermitteln.</string>
+    <string name="update_announcement_text">Es gibt ein neues Update. Bitte gehe auf https://github.com/realpexel/VibFinder/releases und lade die neuste Version herunter.</string>
 </resources>

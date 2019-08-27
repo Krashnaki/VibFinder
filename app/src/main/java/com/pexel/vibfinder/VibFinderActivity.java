@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
@@ -27,20 +28,30 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.pexel.vibfinder.objects.Update;
 import com.pexel.vibfinder.objects.VibratorMatch;
 import com.pexel.vibfinder.services.VibFinderService;
 import com.pexel.vibfinder.services.VibFinderService.LocalVibFinderServiceBinder;
 import com.pexel.vibfinder.util.CustomExceptionHandler;
 import com.pexel.vibfinder.util.DialogBuilder;
+import com.pexel.vibfinder.util.IUpdateAPI;
 import com.pexel.vibfinder.util.VibDBHelper;
 import com.pexel.vibfinder.util.VibratorListViewAdapter;
 
+import org.json.JSONObject;
+
+import java.util.GregorianCalendar;
 import java.util.Objects;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
-public class VibFinderActivity extends Activity {
+public class VibFinderActivity extends Activity implements Callback<Update> {
     private final static String TAG = VibFinderActivity.class.getSimpleName();
 
     private static final int REQUEST_ENABLE_BT = 20;
@@ -318,6 +329,30 @@ public class VibFinderActivity extends Activity {
         vibListViewAdapter.notifyDataSetChanged();
 
         registerReceiver(mGattUpdateReceiver, createGattUpdateIntentFilter());
+
+        checkForUpdate();
+    }
+
+    private void checkForUpdate() {
+        Log.d(TAG, "checkForUpdate");
+
+        SharedPreferences preferences = getSharedPreferences("VIBFINDER_UPDATE", MODE_PRIVATE);
+        GregorianCalendar currentTime = new GregorianCalendar();
+
+        long lastUpdateCheck = preferences.getLong("UPDATE_LAST_CHECK", 0);
+
+        Log.d(TAG, "checkForUpdate: Last update check = " + lastUpdateCheck);
+        Log.d(TAG, "checkForUpdate: Current time - 1h = " + (currentTime.getTimeInMillis() - 60 * 60 * 1000));
+
+        if ((currentTime.getTimeInMillis() - 60 * 60 * 1000) > lastUpdateCheck) {
+
+            IUpdateAPI IUpdateAPI = new Retrofit.Builder()
+                    .baseUrl("https://github.com/realpexel/VibFinder/raw/master/")
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build().create(IUpdateAPI.class);
+
+            IUpdateAPI.getLatestVersion().enqueue(this);
+        }
     }
 
     @Override
@@ -405,4 +440,58 @@ public class VibFinderActivity extends Activity {
         enableBLEView.setVisibility(View.VISIBLE);
     }
 
+    @Override
+    public void onResponse(Call<Update> call, Response<Update> response) {
+        Log.d(TAG, "checkForUpdate$onResponse");
+
+        GregorianCalendar currentTime = new GregorianCalendar();
+        SharedPreferences preferences = getSharedPreferences("VIBFINDER_UPDATE", MODE_PRIVATE);
+
+        preferences.edit().
+                putLong("UPDATE_LAST_CHECK", currentTime.getTimeInMillis())
+                .apply();
+
+        if (response.isSuccessful() && response.body() != null) {
+            Update update = response.body();
+            long lastAnnouncement = preferences.getLong("UPDATE_LAST_ANNOUNCEMENT", 0);
+
+            Log.d(TAG, "checkForUpdate$onResponse: Current versioncode = " + BuildConfig.VERSION_CODE);
+            Log.d(TAG, "checkForUpdate$onResponse: New versioncode = " + update.getBuildNumber());
+            Log.d(TAG, "checkForUpdate$onResponse: Last Announcement = " + lastAnnouncement);
+            Log.d(TAG, "checkForUpdate$onResponse: Current time = " + currentTime.getTimeInMillis());
+
+            if (update.getBuildNumber() > BuildConfig.VERSION_CODE &&
+                    (currentTime.getTimeInMillis() - 60 * 60 * 1000) < lastAnnouncement) {
+
+                DialogBuilder.start(VibFinderActivity.this)
+                        .content(getString(R.string.update_announcement_text))
+                        .positive()
+                        .cancelable()
+                        .build().show();
+
+                preferences.edit()
+                        .putLong("UPDATE_LAST_ANNOUNCEMENT",
+                                currentTime.getTimeInMillis())
+                        .apply();
+            }
+        } else {
+            try {
+                JSONObject jObjError = null;
+                if (response.errorBody() != null) {
+                    jObjError = new JSONObject(response.errorBody().string());
+                }
+                Log.d(TAG,
+                        "checkForUpdate$onResponse: errorbody " + jObjError);
+            } catch (Exception ignored) {
+            }
+        }
+
+
+    }
+
+    @Override
+    public void onFailure(Call<Update> call, Throwable t) {
+        Log.e(TAG, "checkForUpdate$onFailure", t);
+        //Do nothing for now
+    }
 }

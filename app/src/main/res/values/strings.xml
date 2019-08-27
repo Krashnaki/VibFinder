@@ -23,4 +23,5 @@
     <string name="menu_exit">Exit</string>
     <string name="time_zero" translatable="false">00:00</string>
     <string name="location_permission_explanation">Please allow us to access you location. We need this to scan for Bluetooth devices.\nWe won\'t save your location data or transmit them without your explicit consent.</string>
+    <string name="update_announcement_text">There is a new update available. Please visit https://github.com/realpexel/VibFinder/releases and download the newest version.</string>
 </resources>
