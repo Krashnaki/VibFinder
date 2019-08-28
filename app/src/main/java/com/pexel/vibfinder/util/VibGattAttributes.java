@@ -17,10 +17,10 @@ public class VibGattAttributes {
     public static String MANUFACTURER_NAME_CHARA = "00002a29-0000-1000-8000-00805f9b34fb";
 
     //Armor Vibratissimo
-    public static String ARMOR_SERVICE = "00001523-1212-efde-1523-785feabcd123";
+    public static String VIBRATISSIMO_SERVICE = "00001523-1212-efde-1523-785feabcd123";
     
     //Mysteryvibe
-    public static String VIBRATISSIMO_SERVICE = "f0006900-110c-478b-b74b-6f403b364a9c";
+    public static String MYSTERYVIBE_SERVICE = "f0006900-110c-478b-b74b-6f403b364a9c";
 
     //Lovense
     public static String LOVENSE_SERVICE_1 = "0000fff0-0000-1000-8000-00805f9b34fb";
@@ -41,6 +41,9 @@ public class VibGattAttributes {
             "f60402a6-0294-4bdb-9f20-6758133f7090", //Needed uuid 1
             "02962ac9-e86f-4094-989d-231d69995fc2"  //Needed uuid 2
     ));
+
+    //Fleshlight Launch
+    public static final String FLESHLIGHT_LAUNCH_SERVICE = "88f80580-0000-01e6-aace-0002a5d5c51b";
 
     //Vibratissimo Services
     public static String VBS_SERVICE = "00001337-3353-4ce1-f424-117057610263";

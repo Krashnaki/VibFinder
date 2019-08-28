@@ -179,14 +179,15 @@ public class VibFinderService extends Service {
     public VibFinderService() {
         requiredAdvServices = new ArrayList<>();
 
-        requiredAdvServices.add(VibGattAttributes.ARMOR_SERVICE);
         requiredAdvServices.add(VibGattAttributes.VIBRATISSIMO_SERVICE);
+        requiredAdvServices.add(VibGattAttributes.MYSTERYVIBE_SERVICE);
         requiredAdvServices.add(VibGattAttributes.LOVENSE_SERVICE_1);
         requiredAdvServices.add(VibGattAttributes.LOVENSE_SERVICE_2);
         requiredAdvServices.add(VibGattAttributes.LOVENSE_SERVICE_3);
         requiredAdvServices.add(VibGattAttributes.VORZE_SERVICE);
         requiredAdvServices.add(VibGattAttributes.KIIROO_1_SERIVCE);
         requiredAdvServices.add(VibGattAttributes.KIIROO_2_SERIVCE);
+        requiredAdvServices.add(VibGattAttributes.FLESHLIGHT_LAUNCH_SERVICE);
 
     }
 
