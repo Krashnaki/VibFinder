@@ -34,6 +34,7 @@ import android.os.PowerManager;
 import android.os.Vibrator;
 import android.util.Log;
 
+import com.pexel.vibfinder.BuildConfig;
 import com.pexel.vibfinder.R;
 import com.pexel.vibfinder.VibFinderActivity;
 import com.pexel.vibfinder.util.CustomExceptionHandler;
@@ -49,6 +50,10 @@ import java.util.List;
 import static android.bluetooth.le.ScanSettings.CALLBACK_TYPE_ALL_MATCHES;
 import static android.bluetooth.le.ScanSettings.CALLBACK_TYPE_FIRST_MATCH;
 import static android.bluetooth.le.ScanSettings.CALLBACK_TYPE_MATCH_LOST;
+import static android.bluetooth.le.ScanSettings.SCAN_MODE_BALANCED;
+import static android.bluetooth.le.ScanSettings.SCAN_MODE_LOW_LATENCY;
+import static android.bluetooth.le.ScanSettings.SCAN_MODE_LOW_POWER;
+import static android.bluetooth.le.ScanSettings.SCAN_MODE_OPPORTUNISTIC;
 
 public class VibFinderService extends Service {
 
@@ -84,34 +89,21 @@ public class VibFinderService extends Service {
      * time in ms, that the phone's vibrator is allowed to vibrate max. in case a vibrator has been found
      */
     private final static int VIBRATION_TIME = 10000;
-
-    /**
-     * interval in ms in which the alarm will be triggered
-     */
-    private final static int ALARM_INTERVAL = 30 * 1000;
-
     /**
      * time in ms that has to pass so that an already sent match will be sent to the server again
      */
     private final static int MIN_SEND_TO_SERVER_INTERVAL = 3600000;
-
     /**
      * time in ms that the phone will search for its current location before sending a found vibrator to the server
      */
     private final static int LOCATION_SEARCH_TIME = 60000;
-
-
-    private final static String SEARCHED_MANUFACTURER_NAME = "Amor AG";
-
     // Stops scanning after 10 seconds.
     private static final long SCAN_PERIOD = 10000;
     private static VibFinderService mSelfService = null;
-
     private final IBinder mBinder = new LocalVibFinderServiceBinder();
-
+    public ArrayList<Object> requiredAdvServices;
     BluetoothDevice mCurrentDevice;
     LocationManager locationManager;
-
     private BluetoothAdapter mBluetoothAdapter; //only needed to retrieve the ScanAdapter
     private BluetoothLeScanner mLeScanner; //needed to perform the LE Scan
     private boolean mScanning;
@@ -119,6 +111,8 @@ public class VibFinderService extends Service {
     private boolean mAlertActive = false; //is the phone currently vibrating
     private boolean mSearchEnabled = false; //is the search active = is the cron job active
     private AlarmBroadcastReceiver alarmBroadcastReceiver = new AlarmBroadcastReceiver(); //used to create a cron job like task
+    private ScanAlarmReciever scanAlarmReciever = new ScanAlarmReciever();
+
 
     //stuff related to the check if it is a vibrator or not
     private BluetoothGattService mAmorVibService;
@@ -127,9 +121,9 @@ public class VibFinderService extends Service {
     private Handler mHandler; //used to stop the search and vibration after a defined time
     private List<BluetoothDevice> mScanMatches = new ArrayList<>();
     private VibDBHelper mVibDB; //accessing the DB with validated and rejected scanMatches
-    public  ArrayList<Object> requiredAdvServices;
     private int mConnectionState = DISCONNECTED;
     private BluetoothLEService bluetoothLEService;
+
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
         @Override
@@ -153,43 +147,6 @@ public class VibFinderService extends Service {
             bluetoothLEService = null;
         }
     };
-
-    //for gps
-    private Location mCurrentLocation = null;
-    LocationListener locationListener = new LocationListener() {
-        public void onLocationChanged(Location location) {
-            // Called when a new location is found by the network location provider.
-            mCurrentLocation = location;
-        }
-
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-        }
-
-        public void onProviderEnabled(String provider) {
-        }
-
-        public void onProviderDisabled(String provider) {
-        }
-    };
-
-    private boolean mIsGettingLocation = false;
-    private List<BluetoothDevice> mFoundVibrators = Collections.synchronizedList(new LinkedList<>());
-
-
-    public VibFinderService() {
-        requiredAdvServices = new ArrayList<>();
-
-        requiredAdvServices.add(VibGattAttributes.VIBRATISSIMO_SERVICE);
-        requiredAdvServices.add(VibGattAttributes.MYSTERYVIBE_SERVICE);
-        requiredAdvServices.add(VibGattAttributes.LOVENSE_SERVICE_1);
-        requiredAdvServices.add(VibGattAttributes.LOVENSE_SERVICE_2);
-        requiredAdvServices.add(VibGattAttributes.LOVENSE_SERVICE_3);
-        requiredAdvServices.add(VibGattAttributes.VORZE_SERVICE);
-        requiredAdvServices.add(VibGattAttributes.KIIROO_1_SERIVCE);
-        requiredAdvServices.add(VibGattAttributes.KIIROO_2_SERIVCE);
-        requiredAdvServices.add(VibGattAttributes.FLESHLIGHT_LAUNCH_SERVICE);
-
-    }
 
     /**
      * Handles various events fired by the Service.
@@ -297,6 +254,30 @@ public class VibFinderService extends Service {
         }
     };
 
+    //for gps
+    private Location mCurrentLocation = null;
+    LocationListener locationListener = new LocationListener() {
+        public void onLocationChanged(Location location) {
+            // Called when a new location is found by the network location provider.
+            mCurrentLocation = location;
+        }
+
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+        }
+
+        public void onProviderEnabled(String provider) {
+        }
+
+        public void onProviderDisabled(String provider) {
+        }
+    };
+    private boolean mIsGettingLocation = false;
+    private List<BluetoothDevice> mFoundVibrators = Collections.synchronizedList(new LinkedList<>());
+
+
+    private int scanMode;
+    private int scanInterval;
+    private int scanDuration;
 
     /**
      * Callback function that will be called if a BLE Device whose advertised characteristics match
@@ -309,6 +290,11 @@ public class VibFinderService extends Service {
                 public void onScanResult(int callbackType, final ScanResult result) {
                     Log.d(TAG, "onScanResult");
 
+                    setScanInterval(5);
+                    setScanDuration(2);
+                    setScanMode(SCAN_MODE_LOW_LATENCY);
+
+
                     if (callbackType == CALLBACK_TYPE_ALL_MATCHES || callbackType == CALLBACK_TYPE_FIRST_MATCH) {
                         Log.d(TAG, "onScanResult: handling scan match");
                         handleFoundScanMatch(result.getDevice());
@@ -317,6 +303,26 @@ public class VibFinderService extends Service {
                     }
                 }
             };
+
+
+    public VibFinderService() {
+        requiredAdvServices = new ArrayList<>();
+
+        setScanInterval(BuildConfig.DEBUG ? 30 : 60);
+        setScanDuration(10);
+        setScanMode(SCAN_MODE_BALANCED);
+
+        requiredAdvServices.add(VibGattAttributes.VIBRATISSIMO_SERVICE);
+        requiredAdvServices.add(VibGattAttributes.MYSTERYVIBE_SERVICE);
+        requiredAdvServices.add(VibGattAttributes.LOVENSE_SERVICE_1);
+        requiredAdvServices.add(VibGattAttributes.LOVENSE_SERVICE_2);
+        requiredAdvServices.add(VibGattAttributes.LOVENSE_SERVICE_3);
+        requiredAdvServices.add(VibGattAttributes.VORZE_SERVICE);
+        requiredAdvServices.add(VibGattAttributes.KIIROO_1_SERIVCE);
+        requiredAdvServices.add(VibGattAttributes.KIIROO_2_SERIVCE);
+        requiredAdvServices.add(VibGattAttributes.FLESHLIGHT_LAUNCH_SERVICE);
+
+    }
 
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
@@ -328,6 +334,58 @@ public class VibFinderService extends Service {
         return intentFilter;
     }
 
+    public int getScanInterval() {
+        return scanInterval;
+    }
+
+    /**
+     * setting interval between two scan starts
+     *
+     * @param scanInterval in seconds
+     */
+    public void setScanInterval(int scanInterval) {
+        Log.d(TAG, "setScanInterval: " + scanInterval);
+        this.scanInterval = scanInterval * 1000;
+    }
+
+    public int getScanMode() {
+        return scanMode;
+    }
+
+    /**
+     * Set scan mode of next scan.
+     *
+     * @param scanMode one of SCAN_MODE_BALANCED, SCAN_MODE_LOW_LATENCY or SCAN_MODE_LOW_POWER
+     */
+    public void setScanMode(int scanMode) {
+        if (BuildConfig.DEBUG) {
+            switch (scanMode) {
+                case SCAN_MODE_BALANCED:
+                    Log.d(TAG, "setScanMode: SCAN_MODE_BALANCED");
+                    break;
+                case SCAN_MODE_LOW_LATENCY:
+                    Log.d(TAG, "setScanMode: SCAN_MODE_LOW_LATENCY");
+                    break;
+                case SCAN_MODE_LOW_POWER:
+                    Log.d(TAG, "setScanMode: SCAN_MODE_LOW_POWER");
+                    break;
+            }
+        }
+        this.scanMode = scanMode;
+    }
+
+    public int getScanDuration() {
+        return scanDuration;
+    }
+
+    /**
+     * Set duration of on scan process
+     * @param scanDuration in seconds
+     */
+    public void setScanDuration(int scanDuration) {
+        Log.d(TAG, "setScanDuration: " + scanDuration);
+        this.scanDuration = scanDuration * 1000;
+    }
 
     /**
      * This function initializes all the service and characteristic variables.
@@ -414,11 +472,11 @@ public class VibFinderService extends Service {
                 Log.d(TAG, "scanLeDevice: Scan finished");
                 mScanning = false;
                 mLeScanner.stopScan(mLeScanCallback);
-            }, SCAN_PERIOD);
+            }, getScanDuration());
 
             mScanning = true;
 
-            ScanSettings settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build();
+            ScanSettings settings = new ScanSettings.Builder().setScanMode(getScanMode()).build();
             List<ScanFilter> scanFilters = new ArrayList<>();
             for (Object o : requiredAdvServices) {
                 if (o instanceof String)
@@ -439,6 +497,8 @@ public class VibFinderService extends Service {
 
             }
 
+            scanMode = ScanSettings.SCAN_MODE_BALANCED;
+            mSelfService.setScanInterval(60);
             mLeScanner.startScan(scanFilters, settings, mLeScanCallback);
         } else {
             mScanning = false;
@@ -671,6 +731,7 @@ public class VibFinderService extends Service {
         }
 
         mSearchEnabled = true;
+        //scanAlarmReciever.setNextAlarm(this, getScanInterval());
         alarmBroadcastReceiver.setAlarm(this);
         scanLeDevice(true);
 
@@ -694,6 +755,7 @@ public class VibFinderService extends Service {
             return;
         }
         mSearchEnabled = false;
+        //scanAlarmReciever.cancelAlarm(this);
         alarmBroadcastReceiver.cancelAlarm(this);
         mLeScanner.stopScan(mLeScanCallback);
         //remember that there is no alarm running in case that the OS kills the service and starts it again
@@ -884,6 +946,87 @@ public class VibFinderService extends Service {
     }
 
 
+    public static class ScanAlarmReciever extends BroadcastReceiver {
+
+        private boolean alarmActive = false;
+
+        public boolean isAlarmActive() {
+            return alarmActive;
+        }
+
+        public void setAlarmActive(boolean alarmActive) {
+            Log.d(TAG, "setAlarmActive: " + alarmActive);
+            this.alarmActive = alarmActive;
+        }
+
+        public void cancelAlarm(Context context) {
+
+            PendingIntent alarmIntent =
+                    PendingIntent.getBroadcast(
+                            context,
+                            0,
+                            new Intent(context, ScanAlarmReciever.class),
+                            PendingIntent.FLAG_NO_CREATE);
+
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (alarmIntent != null) am.cancel(alarmIntent);
+
+            setAlarmActive(false);
+        }
+
+        public void setNextAlarm(Context context, int delay) {
+            Log.d(TAG, "setNextAlarm: " + delay);
+
+
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            Intent intent = new Intent(context, ScanAlarmReciever.class);
+            PendingIntent alarmIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
+            am.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), alarmIntent);
+
+            /*PendingIntent alarmIntent =
+                    PendingIntent.getBroadcast(
+                            context,
+                            0,
+                            new Intent(context, ScanAlarmReciever.class),
+                            0);
+
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (am != null) {
+                am.set(AlarmManager.RTC_WAKEUP,
+                        System.currentTimeMillis() + delay,
+                        alarmIntent);
+
+                Log.d(TAG, "setNextAlarm: set to " + (System.currentTimeMillis() + delay));
+            } else  {
+                Log.d(TAG, "onReceive: Could not set next scan alarm");
+            }*/
+            setAlarmActive(true);
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "ScanAlarmReciever#onReceive: ");
+            if (mSelfService == null) {
+                Log.d(TAG, "onReceive: Aborted. mSelfService is null");
+            }
+
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "vibfinder:alarmwakelock");
+            wl.acquire(mSelfService.getScanDuration() * 2);
+
+            //actual action to be performed in the alarm
+            if (mSelfService != null) {
+                mSelfService.scanLeDevice(true);
+            }
+
+            wl.release();
+
+            if (isAlarmActive()) {
+                setNextAlarm(context, mSelfService.getScanInterval());
+            }
+        }
+    }
+
     /**
      * This class is used to create a cron like job for the search for vibrators.
      * It needs to be static because it is registered in the manifest as a receiver.
@@ -898,6 +1041,7 @@ public class VibFinderService extends Service {
 
             //actual action to be performed in the alarm
             if (mSelfService != null) {
+                mSelfService.setScanInterval(60);
                 mSelfService.scanLeDevice(true);
             }
 
@@ -909,7 +1053,7 @@ public class VibFinderService extends Service {
             AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
             Intent intent = new Intent(context, AlarmBroadcastReceiver.class);
             PendingIntent alarmIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
-            am.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), ALARM_INTERVAL, alarmIntent);
+            am.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), mSelfService.getScanInterval(), alarmIntent);
             Log.d(TAG, "AlarmBroadcastReceiver set");
         }
 
