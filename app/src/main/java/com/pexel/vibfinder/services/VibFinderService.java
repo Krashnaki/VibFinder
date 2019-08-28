@@ -127,7 +127,7 @@ public class VibFinderService extends Service {
     private Handler mHandler; //used to stop the search and vibration after a defined time
     private List<BluetoothDevice> mScanMatches = new ArrayList<>();
     private VibDBHelper mVibDB; //accessing the DB with validated and rejected scanMatches
-    private ArrayList<Object> requiredAdvServices;
+    public  ArrayList<Object> requiredAdvServices;
     private int mConnectionState = DISCONNECTED;
     private BluetoothLEService bluetoothLEService;
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -184,6 +184,9 @@ public class VibFinderService extends Service {
         requiredAdvServices.add(VibGattAttributes.LOVENSE_SERVICE_1);
         requiredAdvServices.add(VibGattAttributes.LOVENSE_SERVICE_2);
         requiredAdvServices.add(VibGattAttributes.LOVENSE_SERVICE_3);
+        requiredAdvServices.add(VibGattAttributes.VORZE_SERVICE);
+        requiredAdvServices.add(VibGattAttributes.KIIROO_1_SERIVCE);
+        requiredAdvServices.add(VibGattAttributes.KIIROO_2_SERIVCE);
 
     }
 
