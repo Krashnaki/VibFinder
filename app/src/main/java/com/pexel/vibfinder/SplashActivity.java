@@ -12,10 +12,6 @@ public class SplashActivity extends Activity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        try {
-            Thread.sleep(2000);
-        } catch (Exception e) {}
-        
         Intent intent = new Intent(this, VibFinderActivity.class);
         startActivity(intent);
         finish();
