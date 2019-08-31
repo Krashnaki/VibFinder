@@ -12,22 +12,25 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import com.pexel.vibfinder.R;
+import com.pexel.vibfinder.VibFinderActivity;
 import com.pexel.vibfinder.objects.VibratorMatch;
 
 import java.util.ArrayList;
 
 public class VibratorListViewAdapter extends ArrayAdapter<VibratorMatch> {
 
-    public static final String TAG = VibratorListViewAdapter.class.getSimpleName();
+    private static final String TAG = VibratorListViewAdapter.class.getSimpleName();
 
+    private VibFinderActivity activity;
     private Context context;
     private ArrayList<VibratorMatch> vibrators;
 
-    public VibratorListViewAdapter(@NonNull Context context) {
+    public VibratorListViewAdapter(VibFinderActivity activity, @NonNull Context context) {
         super(context, R.layout.listitem_vibrator);
 
         Log.d(TAG, "Constructor");
 
+        this.activity = activity;
         this.context = context;
         this.vibrators = new ArrayList<>();
     }
@@ -76,6 +79,11 @@ public class VibratorListViewAdapter extends ArrayAdapter<VibratorMatch> {
         } else {
             viewHolder = (ViewHolder) view.getTag();
         }
+
+        view.setOnLongClickListener(v -> {
+            activity.ensureReportDevice(getVibrator(i));
+            return true;
+        });
 
         viewHolder.alertEnabled.setOnClickListener(v -> {
 

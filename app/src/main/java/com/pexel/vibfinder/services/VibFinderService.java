@@ -491,7 +491,7 @@ public class VibFinderService extends Service {
         long[] pattern = {200, 200, 200, 800, 200};
 
         mVibrator.vibrate(pattern, -1);
-        mHandler.postDelayed(this::stopAlert, VIBRATION_TIME);
+        //mHandler.postDelayed(this::stopAlert, VIBRATION_TIME);
 
         //open activity
         Intent dialogIntent = new Intent(this, VibFinderActivity.class);

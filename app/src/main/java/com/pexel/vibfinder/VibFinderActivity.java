@@ -28,23 +28,29 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.pexel.vibfinder.api.APIUtils;
+import com.pexel.vibfinder.api.IAPI;
+import com.pexel.vibfinder.api.ResponseInterceptor;
+import com.pexel.vibfinder.objects.ReportDevice;
+import com.pexel.vibfinder.objects.ResponseMessage;
 import com.pexel.vibfinder.objects.Update;
 import com.pexel.vibfinder.objects.VibratorMatch;
 import com.pexel.vibfinder.services.VibFinderService;
 import com.pexel.vibfinder.services.VibFinderService.LocalVibFinderServiceBinder;
 import com.pexel.vibfinder.util.CustomExceptionHandler;
 import com.pexel.vibfinder.util.DialogBuilder;
-import com.pexel.vibfinder.util.IUpdateAPI;
 import com.pexel.vibfinder.util.VibDBHelper;
 import com.pexel.vibfinder.util.VibratorListViewAdapter;
 
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.Objects;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -76,17 +82,10 @@ public class VibFinderActivity extends Activity implements Callback<Update> {
 
     @BindView(R.id.ble_enable_button)
     Button enableBLEButton;
-
-
-    private VibratorListViewAdapter vibListViewAdapter;
-
-    private VibDBHelper vibDBHelper;
-
-    private VibFinderService vibFinderService;
-
     boolean alreadyDismissd = false;
-
-
+    private VibratorListViewAdapter vibListViewAdapter;
+    private VibDBHelper vibDBHelper;
+    private VibFinderService vibFinderService;
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
@@ -120,7 +119,6 @@ public class VibFinderActivity extends Activity implements Callback<Update> {
             vibFinderService = null;
         }
     };
-
     // Handles various events fired by the Service.
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
@@ -188,6 +186,58 @@ public class VibFinderActivity extends Activity implements Callback<Update> {
         return intentFilter;
     }
 
+    public void ensureReportDevice(VibratorMatch device) {
+
+        Log.d(TAG, "ensureReportDevice");
+
+        DialogBuilder.start(this)
+                .title(getString(R.string.report_device_title))
+                .content(getString(R.string.report_device_text))
+                .positive("Yes", dialog -> reportDevice(device))
+                .cancelable()
+                .build().show();
+    }
+
+    private boolean reportDevice(VibratorMatch device) {
+
+        Log.d(TAG, "reportDevice");
+
+        IAPI iapi = APIUtils.getApiInterface();
+
+        ReportDevice reportDevice = new ReportDevice(device.getAddress(),
+                device.getName(),
+                new ArrayList<>());
+
+        iapi.reportDevice(reportDevice)
+                .enqueue(new Callback<ResponseMessage>() {
+                    @Override
+                    public void onResponse(Call<ResponseMessage> call, Response<ResponseMessage> response) {
+
+                        if (response.isSuccessful()) {
+                            DialogBuilder.start(VibFinderActivity.this)
+                                    .title(getString(R.string.report_device_successfull))
+                                    .cancelable()
+                                    .positive()
+                                    .build().show();
+                        } else {
+                            DialogBuilder.start(VibFinderActivity.this)
+                                    .title(getString(R.string.report_device_failed))
+                                    .cancelable()
+                                    .positive()
+                                    .build().show();
+                        }
+                        //TODO Show snackbar or something
+                    }
+
+                    @Override
+                    public void onFailure(Call<ResponseMessage> call, Throwable t) {
+                        //TODO Show snackbar or something
+                    }
+                });
+
+        return true;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -217,10 +267,15 @@ public class VibFinderActivity extends Activity implements Callback<Update> {
         }
         Log.d(TAG, "onCreate: Set custom exception handler");
 
-        vibListViewAdapter = new VibratorListViewAdapter(this.getApplicationContext());
-        vibList.addHeaderView(getLayoutInflater().inflate(R.layout.listheader_vibrator, vibList, false));
+        vibListViewAdapter = new VibratorListViewAdapter(this, this.getApplicationContext());
+        //vibList.addHeaderView(getLayoutInflater().inflate(R.layout.listheader_vibrator, vibList, false));
+        vibList.setOnItemClickListener((adapterView, view, i, l) -> {
+            reportDevice(vibListViewAdapter.getVibrator(i));
+            //return true;
+        });
         vibList.setAdapter(vibListViewAdapter);
-        Log.d(TAG, "onCreate: Set up list");
+
+        Log.d(TAG, "onCreate: list set up");
 
 
         searchButton.setOnClickListener(v -> {
@@ -344,14 +399,14 @@ public class VibFinderActivity extends Activity implements Callback<Update> {
         Log.d(TAG, "checkForUpdate: Last update check = " + lastUpdateCheck);
         Log.d(TAG, "checkForUpdate: Current time - 1h = " + (currentTime.getTimeInMillis() - 60 * 60 * 1000));
 
-        if ((currentTime.getTimeInMillis() - 60 * 60 * 1000) > lastUpdateCheck) {
+        if ((currentTime.getTimeInMillis() - 60 * 60 * 1000) > lastUpdateCheck || BuildConfig.DEBUG) {
 
-            IUpdateAPI IUpdateAPI = new Retrofit.Builder()
-                    .baseUrl("https://github.com/realpexel/VibFinder/raw/master/")
+            IAPI iapi = new Retrofit.Builder()
+                    .baseUrl("https://vibfinder.dumme.website/")
                     .addConverterFactory(GsonConverterFactory.create())
-                    .build().create(IUpdateAPI.class);
+                    .build().create(IAPI.class);
 
-            IUpdateAPI.getLatestVersion().enqueue(this);
+            iapi.getLatestVersion().enqueue(this);
         }
     }
 
@@ -461,7 +516,7 @@ public class VibFinderActivity extends Activity implements Callback<Update> {
             Log.d(TAG, "checkForUpdate$onResponse: Current time = " + currentTime.getTimeInMillis());
 
             if (update.getBuildNumber() > BuildConfig.VERSION_CODE &&
-                    (currentTime.getTimeInMillis() - 60 * 60 * 1000) < lastAnnouncement) {
+                    (currentTime.getTimeInMillis() - 60 * 60 * 1000) > lastAnnouncement) {
 
                 DialogBuilder.start(VibFinderActivity.this)
                         .content(getString(R.string.update_announcement_text))

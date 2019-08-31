@@ -69,46 +69,41 @@
 
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/linearLayout2"
+            android:id="@+id/list_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:visibility="gone"
-            tools:layout_editor_absoluteX="16dp"
-            tools:layout_editor_absoluteY="64dp">
-
+            android:layout_marginTop="10dp"
+            android:visibility="gone">
 
             <TextView
-                android:id="@+id/textView2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:text="@string/device_name"
-                android:textColor="#000000"
-                android:textSize="8pt"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:id="@+id/textView3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/last_seen"
-                android:textAlignment="textEnd"
-                android:textColor="#000000"
-                android:textSize="8pt"
-                app:layout_constraintEnd_toStartOf="@+id/textView4"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:id="@+id/textView4"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/alert_enabled"
                 android:textAlignment="textEnd"
                 android:textColor="#000000"
-                android:textSize="8pt"
+                android:textSize="18sp"
                 app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="60dp"
+                android:text="@string/last_seen"
+                android:textAlignment="textEnd"
+                android:textColor="#000000"
+                android:textSize="18sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:text="@string/device_name"
+                android:textColor="#000000"
+                android:textSize="18sp"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -117,8 +112,6 @@
             android:id="@+id/vibrators_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="10dip"
-            android:paddingBottom="20dip"
             tools:listheader="@layout/listheader_vibrator"
             tools:listitem="@layout/listitem_vibrator" />
     </LinearLayout>
