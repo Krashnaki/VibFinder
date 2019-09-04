@@ -6,6 +6,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.ParcelUuid;
 import android.util.Log;
 
 import com.pexel.vibfinder.objects.VibratorMatch;
@@ -20,6 +21,11 @@ public class VibDBHelper extends SQLiteOpenHelper {
     private static final String VIBRATORS_COLUMN_IGNORED = "ignored";
     private static final String VIBRATORS_COLUMN_LAST_ALARM_TIME = "lastAlarmTime";
     private static final String VIBRATORS_COLUMN_LAST_SEEN_TIME = "lastSeenTime";
+
+    private static final String UUIDS_TABLE_NAME = "vibrator_uuids";
+    private static final String UUIDS_COLUMN_ADDRESS = "address";
+    private static final String UUIDS_COLUMN_UUID = "uuid";
+
     private static final int VALIDATED_STATE = 1;
     private static final int DISCARDED_STATE = 2;
     private final static String TAG = VibDBHelper.class.getSimpleName();
@@ -27,7 +33,7 @@ public class VibDBHelper extends SQLiteOpenHelper {
     private static final int FALSE_INT = 0;
 
     public VibDBHelper(Context context) {
-        super(context, DATABASE_NAME, null, 1);
+        super(context, DATABASE_NAME, null, 2);
     }
 
     @Override
@@ -43,6 +49,12 @@ public class VibDBHelper extends SQLiteOpenHelper {
                 + ", CONSTRAINT pk_Vibrator PRIMARY KEY (" + VIBRATORS_COLUMN_NAME + "," + VIBRATORS_COLUMN_ADDRESS + ")"
                 + ", CONSTRAINT chk_State CHECK (" + VIBRATORS_COLUMN_STATE + "=" + VALIDATED_STATE
                 + " OR " + VIBRATORS_COLUMN_STATE + "=" + DISCARDED_STATE + ")"
+                + ")");
+
+        db.execSQL("CREATE TABLE " + UUIDS_TABLE_NAME + " ( " +
+                UUIDS_COLUMN_ADDRESS + " TEXT, " +
+                UUIDS_COLUMN_UUID + "TEXT, " +
+                "CONSTRAINT pk_uuids PRIMARY KEY (" + UUIDS_COLUMN_ADDRESS + "," + UUIDS_COLUMN_UUID + ")"
                 + ")");
     }
 
@@ -80,6 +92,13 @@ public class VibDBHelper extends SQLiteOpenHelper {
         contentValues.put(VIBRATORS_COLUMN_ADDRESS, device.getAddress());
         contentValues.put(VIBRATORS_COLUMN_STATE, VALIDATED_STATE);
         db.insert(VIBRATORS_TABLE_NAME, null, contentValues);
+
+        for (ParcelUuid uuid :                device.getUuids()) {
+            contentValues = new ContentValues();
+            contentValues.put(UUIDS_COLUMN_ADDRESS, device.getAddress());
+            contentValues.put(UUIDS_COLUMN_UUID, uuid.toString());
+            db.insert(UUIDS_TABLE_NAME, null, contentValues);
+        }
     }
 
     /**
@@ -151,20 +170,18 @@ public class VibDBHelper extends SQLiteOpenHelper {
     }
 
     /**
-     * @see VibDBHelper#setVibratorIgnored(String, String, boolean)
-     *
-     * @param device     the {@link VibratorMatch} whose ignored parameter should be set.
+     * @param device  the {@link VibratorMatch} whose ignored parameter should be set.
      * @param ignored true if the device should be ignored, false if not.
+     * @see VibDBHelper#setVibratorIgnored(String, String, boolean)
      */
     public void setVibratorIgnored(BluetoothDevice device, boolean ignored) {
         setVibratorIgnored(device.getName(), device.getAddress(), ignored);
     }
 
     /**
-     * @see VibDBHelper#setVibratorIgnored(String, String, boolean)
-     *
      * @param vib     the {@link VibratorMatch} whose ignored parameter should be set.
      * @param ignored true if the device should be ignored, false if not.
+     * @see VibDBHelper#setVibratorIgnored(String, String, boolean)
      */
     public void setVibratorIgnored(VibratorMatch vib, boolean ignored) {
         setVibratorIgnored(vib.getName(), vib.getAddress(), ignored);

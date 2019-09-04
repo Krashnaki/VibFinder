@@ -401,10 +401,7 @@ public class VibFinderActivity extends Activity implements Callback<Update> {
 
         if ((currentTime.getTimeInMillis() - 60 * 60 * 1000) > lastUpdateCheck || BuildConfig.DEBUG) {
 
-            IAPI iapi = new Retrofit.Builder()
-                    .baseUrl("https://vibfinder.dumme.website/")
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build().create(IAPI.class);
+            IAPI iapi = APIUtils.getApiInterface();
 
             iapi.getLatestVersion().enqueue(this);
         }
